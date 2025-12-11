@@ -33,7 +33,7 @@ summary(data_raw)
 
 ```{r filtering the necessary columns}
 hip_data <- data_raw %>% 
-  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2)
+  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2, tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms)
 
 dim(hip_data) # 26 cols, 97429 rows
 ```
@@ -43,7 +43,7 @@ summary(hip_data)
 ```
 
 ```{r factorising as needed}
-hip_data <- hip_data %>% mutate(
+hip_data_factor <- hip_data %>% mutate(
   sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
   e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
   painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
@@ -71,33 +71,34 @@ hip_data <- hip_data %>% mutate(
 )
 ```
 
+
 ## Time from admissions
 
 ```{r}
 # Transfer time
-hip_data$tarrdatetime_hms
+hip_data_factor$tarrdatetime_hms
 ```
 
 ```{r}
 # Operation time 
-hip_data$arrdatetime_hms
+hip_data_factor$arrdatetime_hms
 ```
 
 ```{r}
 # Inpatient time 
-hip_data$admdatetimeop_hms
+hip_data_factor$admdatetimeop_hms
 ```
 
 # Time of surgery
 
 ```{r}
 # hip fracture surgery time 
-hip_data$sdatetime_hms
+hip_data_factor$sdatetime_hms
 ```
 ```{r}
 
 
-hip_data <- hip_data %>%
+hip_data_factor <- hip_data_factor %>%
   mutate(
     #admission_time = case_when(
       #!is.na(admdatetimeop_hms) ~ admdatetimeop_hms,
@@ -107,7 +108,7 @@ hip_data <- hip_data %>%
 )
 
 
-hip_data <- hip_data %>%
+hip_data_factor <- hip_data_factor %>%
   mutate(
     admission_time    = as_hms(admission_time),
     surgery_time = as_hms(sdatetime_hms),
@@ -123,21 +124,21 @@ hip_data <- hip_data %>%
 
 ```{r}
 # checkoing the diff values 
-hip_data$diff_hours
+hip_data_factor$diff_hours
 ```
 
 ```{r}
 # Check number of na values
-zeros <- hip_data %>% filter(diff_hours == 0)
+zeros <- hip_data_factor %>% filter(diff_hours == 0)
 nrow(zeros)
 #hours are zero but there is difference in seconds
 
 # number of rows in dataset 
-nrow(hip_data)
+nrow(hip_data_factor)
 ```
 
 ```{r}
-surgery_time_greater <- hip_data %>% filter(diff_hours < 0)
+surgery_time_greater <- hip_data_factor %>% filter(diff_hours < 0)
 nrow(surgery_time_greater)
 # All surgery times are after admission time
 ```
@@ -145,24 +146,27 @@ nrow(surgery_time_greater)
 
 ```{r}
 # Check number of na values
-sum(is.na(hip_data$diff_hours))
+sum(is.na(hip_data_factor$diff_hours))
 ```
 
 ```{r}
 # Adding surgery indicator
-hip_data <- hip_data %>%
+hip_data_factor <- hip_data_factor %>%
   mutate(
     time_surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
   )
-hip_data$time_surgery_indicator
+hip_data_factor$time_surgery_indicator
 ```
 
 ```{r}
 # Viewing if all the columns are added 
-View(hip_data)
+View(hip_data_factor)
 ```
 
 
+```{r}
+
+```
 
 
 

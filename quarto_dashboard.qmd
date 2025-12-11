@@ -26,6 +26,7 @@ library(compareGroups)
 
 ```{r include=FALSE, echo = FALSE}
 #| label: data loading
+#| context: setup
 data_raw <- read.csv('unsw_datathon_2025.csv')
 ```
 
@@ -192,9 +193,75 @@ A person presenting to hospital with a suspected hip fracture receives care that
 
 Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
 
+##
+
 <h2><span style="color:#423A8E">Indicator 1a</span></h2>
 
 Proportion of patients with a hip fracture who were screened for cognitive impairment using a validated tool on presentation to hospital.
+
+##
+
+<h2><span style="color:#423A8E">National Data</span></h2>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_cogassess <- data_raw %>%
+  filter(cogassess %in% c(2, 3)) %>%
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_cogassess <- patients_per_hosp_cogassess %>%
+  left_join(totals, by = "ahos_code") %>%
+  mutate(pct_2_or_3 = round(100 * n_patients / total_patients, 1))
+
+national_prop_cogassess <- data_raw %>%
+  summarise(
+    n_total = 97429,
+    n_23    = sum(cogstat %in% c(2, 3), na.rm = TRUE),
+    prop_23 = round(100 * n_23 / n_total, 2)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator1a_plot <- renderPlot({
+  req(result_cogassess, national_prop_cogassess)
+
+  ggplot(result_cogassess,
+         aes(x = reorder(ahos_code, pct_2_or_3),
+             y = pct_2_or_3)) +
+    geom_col(fill = "steelblue") +
+    geom_hline(yintercept = national_prop_cogassess$prop_23,
+               color = "red", linetype = "dashed") +
+    annotate("label",
+             x = 1,
+             y = max(result_cogassess$pct_2_or_3, na.rm = TRUE),
+             label = "National Proportion",
+             color = "red",
+             hjust = 0) +
+    labs(title = "Proportion Screened for Cognitive Impairment",
+         x = "Hospital",
+         y = "Proportion (%)") +
+    theme_minimal() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator1a_plot")
+```
+
+##
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 

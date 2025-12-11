@@ -1,9 +1,11 @@
 ---
-title: "Dashboard"
+title: "Dashboard Draft"
+author: "Meutia"
 format:
   dashboard:
     orientation: rows
     theme: default
+    css: custom.css
 server: shiny
 ---
 
@@ -29,7 +31,138 @@ data_raw <- read.csv('unsw_datathon_2025.csv')
 View(data_raw)
 ```
 
-# Home
+# Home {scrolling="true"}
+
+##
+
+<h1><span style="color:#423A8E">Welcome to the Australian Hip Fracture Registry for Prince of Wales Hospital</span></h1>
+
+This dashboard is a tool to benchmark hospital performance against the ACSQHC clinical quality indicators. <br>
+
+## 
+
+### Hospital Snapshot
+
+
+<div class="kpi-cards">
+  <div class="kpi-card" style="background-color:#FFC107;">
+   Active Patients <br>`r nrow(data_raw)`
+  </div>
+
+  <div class="kpi-card" style="background-color:#DC3545;">
+   Last Modified <br>`r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` <br>`r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+  </div>
+
+  <div class="kpi-card" style="background-color:#198754;">
+   2022 Records <br>`r nrow(data_raw)`
+  </div>
+
+  <div class="kpi-card" style="background-color:#0D6EFD;">
+   All Records <br>`r nrow(data_raw)`
+  </div>
+</div>
+
+
+<style>
+
+.kpi-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr)); /* 4 columns */
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.kpi-card {
+  min-height: 80px;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Responsive: 2 columns on tablets, stack on phones */
+@media (max-width: 992px) {
+  .kpi-cards { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+@media (max-width: 576px) {
+  .kpi-cards { grid-template-columns: 1fr; }
+}
+
+</style>
+
+
+##
+
+### Hip Fracture Clinical Care Standard
+
+
+::: {.row}
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 1**
+
+[Care at presentation](#qs-1){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 2**
+
+[Pain management](#qs-2){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 3**
+
+[Orthogeriatric model of care](#qs-3){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 4**
+
+[Timing of surgery](#qs-4){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 5**
+
+[Mobilisation and weight bearing](#qs-5){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 6**
+
+[Minimising risk of another fracture](#qs-6){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
+
+::: {.col-md-4}
+::: {.card style="height:100%; text-align:center;"}
+**QS 7**
+
+[Transition from hospital care](#qs-7){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
+:::
+:::
+
 
 # QS 1 {#qs-1}
 
@@ -72,3 +205,4 @@ Before a person leaves hospital after a hip fracture, they receive a falls and b
 <h1><span style="color:#423A8E">Transition from hospital care</span></h1>
 
 Before a person leaves hospital after a hip fracture, an individualised care plan is developed that describes their goals of care and ongoing care needs. This plan is developed in discussion with the person and their family or support people. The plan includes mobilisation activities and expected function post-injury, wound care, pain management, nutrition, fracture prevention strategies, changed or new medicines, and specific rehabilitation services and equipment. On discharge, the plan is provided to the person and communicated with their general practice and other ongoing clinicians and care providers.
+

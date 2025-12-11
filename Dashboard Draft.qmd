@@ -28,7 +28,6 @@ library(compareGroups)
 ```{r include=FALSE, echo = FALSE}
 #| label: data loading
 data_raw <- read.csv('unsw_datathon_2025.csv')
-View(data_raw)
 ```
 
 # Home {scrolling="true"}
@@ -42,6 +41,8 @@ This dashboard is a tool to benchmark hospital performance against the ACSQHC cl
 ## 
 
 ### Hospital Snapshot
+
+<h2><span style="color:#423A8E">Hospital Snapshot</span></h2>
 
 
 <div class="kpi-cards">
@@ -101,67 +102,77 @@ This dashboard is a tool to benchmark hospital performance against the ACSQHC cl
 
 ##
 
-### Hip Fracture Clinical Care Standard
+### 
 
 
-::: {.row}
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 1**
+<h2><span style="color:#423A8E">Hip Fracture Clinical Care Standard</span></h2>
 
-[Care at presentation](#qs-1){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
-
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 2**
-
-[Pain management](#qs-2){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
-
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 3**
-
-[Orthogeriatric model of care](#qs-3){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
+<!-- Row 1: 4 tiles -->
+<div class="page-button">
+  <div class="page-button__item">[Care at presentation](#qs-1)</div>
+  <div class="page-button__item">[Pain management](#qs-2)</div>
+  <div class="page-button__item">[Orthogeriatric model of care](#qs-3)</div>
+  <div class="page-button__item">[Timing of surgery](#qs-4)</div>
+</div>
 
 
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 4**
-
-[Timing of surgery](#qs-4){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
-
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 5**
-
-[Mobilisation and weight bearing](#qs-5){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
-
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 6**
-
-[Minimising risk of another fracture](#qs-6){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
+<!-- Row 2: 3 tiles -->
+<div class="page-button" style="grid-template-columns: repeat(3, minmax(220px, 1fr));">
+  <div class="page-button__item">[Mobilisation and weight bearing](#qs-5)</div>
+  <div class="page-button__item">[Minimising risk of another fracture](#qs-6)</div>
+  <div class="page-button__item">[Transition from hospital care](#qs-7)</div>
+</div>
 
 
-::: {.col-md-4}
-::: {.card style="height:100%; text-align:center;"}
-**QS 7**
 
-[Transition from hospital care](#qs-7){.btn .btn-primary .btn-sm style="margin-bottom:10px;"}
-:::
-:::
+<style>
+/* Container: 4 columns on desktop */
+.page-button {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+/* Tile style */
+.page-button__item {
+  min-height: 80px;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: #ffff;
+  background: #423A8E;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make the whole tile clickable */
+.page-button__item a {
+  color: #fff;
+  text-decoration: none;
+  width: 100%;
+}
+
+/* Hover/focus states */
+.page-button__item:hover,
+.page-button__item:focus-within {
+  background: #423A8E;
+}
+
+/* Responsive: 2 columns on tablets, stack on phones */
+@media (max-width: 992px) {
+  .page-button { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+@media (max-width: 576px) {
+  .page-button { grid-template-columns: 1fr; }
+}
+</style>
+
 
 
 # QS 1 {#qs-1}
@@ -170,11 +181,20 @@ This dashboard is a tool to benchmark hospital performance against the ACSQHC cl
 
 A person presenting to hospital with a suspected hip fracture receives care that is guided by timely assessment and management of medical conditions, including cognition, pain, nutritional status and frailty. Arrangements are made according to a locally endorsed hip fracture pathway.
 
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
+
 # QS 2 {#qs-2}
 
 <h1><span style="color:#423A8E">Pain management</span></h1>
 
 A person with a hip fracture is assessed for pain at the time of presentation to the emergency department and regularly throughout their acute admission. Pain management includes appropriate multimodal analgesia and nerve blocks, unless contraindicated.
+
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
 # QS 3 {#qs-3}
 
@@ -182,11 +202,19 @@ A person with a hip fracture is assessed for pain at the time of presentation to
 
 A person with a hip fracture is offered treatment based on an orthogeriatric model of care as defined in the Australian and New Zealand Guideline for Hip Fracture Care. A coordinated multidisciplinary approach is used to identify and manage malnutrition, frailty, cognitive impairment and delirium.
 
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
+
 # QS 4 {#qs-4}
 
 <h1><span style="color:#423A8E">Timing of surgery</span></h1>
 
 A person with a hip fracture receives surgery within 36 hours of their first presentation to hospital.
+
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
 # QS 5 {#qs-5}
 
@@ -194,11 +222,19 @@ A person with a hip fracture receives surgery within 36 hours of their first pre
 
 A person with a hip fracture is mobilised without restrictions on weight bearing, starting the day of, or the day after, surgery, and at least once a day thereafter, according to their clinical condition and agreed goals of care.
 
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
+
 # QS 6 {#qs-6}
 
 <h1><span style="color:#423A8E">Minimising risk of another fracture</span></h1>
 
 Before a person leaves hospital after a hip fracture, they receive a falls and bone health assessment and management plan, with appropriate referral for secondary fracture prevention.
+
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
 # QS 7 {#qs-7}
 
@@ -206,3 +242,6 @@ Before a person leaves hospital after a hip fracture, they receive a falls and b
 
 Before a person leaves hospital after a hip fracture, an individualised care plan is developed that describes their goals of care and ongoing care needs. This plan is developed in discussion with the person and their family or support people. The plan includes mobilisation activities and expected function post-injury, wound care, pain management, nutrition, fracture prevention strategies, changed or new medicines, and specific rehabilitation services and equipment. On discharge, the plan is provided to the person and communicated with their general practice and other ongoing clinicians and care providers.
 
+Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+[⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}

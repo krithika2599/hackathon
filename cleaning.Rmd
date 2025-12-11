@@ -31,18 +31,18 @@ summary(data_raw)
 ```
 
 ```{r filtering the necessary columns}
-data1 <- data_raw %>% 
+hip_data <- data_raw %>% 
   select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2)
 
-dim(data1) # 26 cols, 97429 rows
+dim(hip_data) # 26 cols, 97429 rows
 ```
 
 ```{r}
-summary(data1)
+summary(hip_data)
 ```
 
 ```{r factorising as needed}
-data1 <- data1 %>% mutate(
+hip_data <- hip_data %>% mutate(
   sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
   e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
   painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
@@ -70,9 +70,96 @@ data1 <- data1 %>% mutate(
 )
 ```
 
+## Time from admissions
+
+```{r}
+# Transfer time
+hip_data$tarrdatetime_hms
+```
+
+```{r}
+# Operation time 
+hip_data$arrdatetime_hms
+```
+
+```{r}
+# Inpatient time 
+hip_data$admdatetimeop_hms
+```
+
+# Time of surgery
+
+```{r}
+# hip fracture surgery time 
+hip_data$sdatetime_hms
+```
+```{r}
 
 
+hip_data <- hip_data %>%
+  mutate(
+    #admission_time = case_when(
+      #!is.na(admdatetimeop_hms) ~ admdatetimeop_hms,
+      #!is.na(tarrdatetime_hms) ~ tarrdatetime_hms,
+      #!is.na(arrdatetime_hms) ~ arrdatetime_hms)
+      admission_time = coalesce(admdatetimeop_hms, tarrdatetime_hms, arrdatetime_hms)
+)
 
+
+hip_data <- hip_data %>%
+  mutate(
+    admission_time    = as_hms(admission_time),
+    surgery_time = as_hms(sdatetime_hms),
+
+    diff_sec = as.numeric(surgery_time - admission_time),
+
+    # FIX: if surgery is "earlier", assume next day
+    diff_sec = ifelse(diff_sec < 0, diff_sec + 24*3600, diff_sec),
+
+    diff_hours = diff_sec / 3600
+  )
+```
+
+```{r}
+# checkoing the diff values 
+hip_data$diff_hours
+```
+
+```{r}
+# Check number of na values
+zeros <- hip_data %>% filter(diff_hours == 0)
+nrow(zeros)
+#hours are zero but there is difference in seconds
+
+# number of rows in dataset 
+nrow(hip_data)
+```
+
+```{r}
+surgery_time_greater <- hip_data %>% filter(diff_hours < 0)
+nrow(surgery_time_greater)
+# All surgery times are after admission time
+```
+
+
+```{r}
+# Check number of na values
+sum(is.na(hip_data$diff_hours))
+```
+
+```{r}
+# Adding surgery indicator
+hip_data <- hip_data %>%
+  mutate(
+    time_surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
+  )
+hip_data$time_surgery_indicator
+```
+
+```{r}
+# Viewing if all the columns are added 
+View(hip_data)
+```
 
 
 

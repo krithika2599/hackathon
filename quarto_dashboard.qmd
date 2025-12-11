@@ -33,7 +33,7 @@ data_raw <- read.csv('unsw_datathon_2025.csv')
 
 ## Introduction
 
-<h1><span style="color:#423A8E">Welcome to the Australian Hip Fracture Registry for Prince of Wales Hospital</span></h1>
+<h1><span style="color:#423A8E">Welcome to the Australian Hip Fracture Registry</span></h1>
 
 This dashboard is a tool to benchmark hospital performance against the ACSQHC clinical quality indicators. <br>
 

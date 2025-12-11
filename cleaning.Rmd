@@ -129,9 +129,16 @@ hip_data$diff_hours
 # Check number of na values
 zeros <- hip_data %>% filter(diff_hours == 0)
 nrow(zeros)
-
 #hours are zero but there is difference in seconds
+
+# number of rows in dataset 
 nrow(hip_data)
+```
+
+```{r}
+surgery_time_greater <- hip_data %>% filter(diff_hours < 0)
+nrow(surgery_time_greater)
+# All surgery times are after admission time
 ```
 
 
@@ -144,12 +151,13 @@ sum(is.na(hip_data$diff_hours))
 # Adding surgery indicator
 hip_data <- hip_data %>%
   mutate(
-    surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
+    time_surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
   )
-hip_data$surgery_indicator
+hip_data$time_surgery_indicator
 ```
 
 ```{r}
+# Viewing if all the columns are added 
 View(hip_data)
 ```
 

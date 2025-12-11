@@ -1,0 +1,199 @@
+---
+title: "cleaning"
+author: "Krithika Subramani"
+date: "2025-12-10"
+format: dashboard
+server: shiny
+---
+
+```{r libraries}
+#| context: setup
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(cobalt)
+library(compareGroups)
+```
+
+```{r data loading}
+#| context: setup
+data_raw <- read.csv('unsw_datathon_2025.csv')
+```
+
+```{r}
+#| context: setup
+# basic stats
+# dim(data_raw) # 76 cols, 97429 rows
+# 
+# summary(data_raw)
+```
+
+```{r filtering the necessary columns}
+#| context: setup
+data1 <- data_raw %>% 
+  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2)
+
+# dim(data1) # 26 cols, 97429 rows
+```
+
+```{r}
+#| context: setup
+# summary(data1)
+```
+
+```{r factorising as needed}
+#| context: setup
+data1 <- data1 %>% mutate(
+  ahos_code = factor(ahos_code),
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT'))
+)
+```
+
+# univariate 
+```{r histogram ui}
+#| panel: sidebar
+selectInput(inputId ="x1", 
+            label = "Select Hospital", 
+            choices = sort(unique(data1$ahos_code)),
+            selected = "LPiFzt")
+
+selectInput(inputId ="facet1", 
+            label = "Facet the histogram by...", 
+            choices = list('Gender' = "sex",
+                          'ED Admission' = "e_dadmit", 
+                           'Pain Assessment' = "painassess", 
+                           'Pain Management' = "painmanage", 
+                           'Nerve Blockers administered before patient was transferred to this hospital?' = "tfanalges",
+                           'Pre-Admission Walking Ability' = "walk",
+                           'Pre-admission Cognitive Assessments' = "cogassess", 
+                           'Bone Protection Medication At Admission' = "bonemed",
+                          'Side of Hip Fracture' = "side",
+                          'Atypical Fracture' = "afracture",
+                          'Type of Fracture' = "ftype",
+                          'ASA Grade' = "asa",
+                          'Clinical Frailty Scale' = "frailty",
+                          'Surgery Delay' = "delay",
+                          'Analgesia administered before surgery' = "analges",
+                          'Postoperative Weight Bearing Status' = "wbear",
+                          'First Day Mobilisation' = "mobil",
+                          'New Skin Pressure Injuries' = "pulcers",
+                          'Bone Protection Medication at Hospital Discharge' = "dbonemed1",
+                          'Post-operative Delirium Assessment' = "delassess",
+                          'Oral Nutritional Supplements' = "ons",
+                          'First Day Walking' = "mobil2",
+                          'Discharge Destination from Acute Ward' = "wdest",
+                          'Bone Protection Medication at 120-day Follow-Up' = "fbonemed2"),
+            selected = "sex")
+```
+
+```{r histogram server and ggplot}
+#| context: server
+
+output$plot1 <- renderPlot({
+    req(input$x1, input$facet1)
+  data_uni = data1 %>% filter(ahos_code==input$x1)
+    ggplot(data_uni, aes(x = .data[[input$facet1]])) +
+      geom_bar(fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+      ggtitle(paste("Histogram of", input$facet1, "for hospital", input$x1)) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(size=15)) 
+})
+```
+
+```{r histogram output}
+#| panel: fill
+
+plotOutput("plot1")
+```
+
+# age
+```{r histogram age ui}
+#| panel: sidebar
+selectInput(inputId ="x2", 
+            label = "Select Hospital", 
+            choices = sort(unique(data1$ahos_code)),
+            selected = "LPiFzt")
+
+selectInput(inputId ="facet2", 
+            label = "Facet the histogram by...", 
+            choices = list('Gender' = "sex",
+                          'ED Admission' = "e_dadmit", 
+                           'Pain Assessment' = "painassess", 
+                           'Pain Management' = "painmanage", 
+                           'Nerve Blockers administered before patient was transferred to this hospital?' = "tfanalges",
+                           'Pre-Admission Walking Ability' = "walk",
+                           'Pre-admission Cognitive Assessments' = "cogassess", 
+                           'Bone Protection Medication At Admission' = "bonemed",
+                          'Side of Hip Fracture' = "side",
+                          'Atypical Fracture' = "afracture",
+                          'Type of Fracture' = "ftype",
+                          'ASA Grade' = "asa",
+                          'Clinical Frailty Scale' = "frailty",
+                          'Surgery Delay' = "delay",
+                          'Analgesia administered before surgery' = "analges",
+                          'Postoperative Weight Bearing Status' = "wbear",
+                          'First Day Mobilisation' = "mobil",
+                          'New Skin Pressure Injuries' = "pulcers",
+                          'Bone Protection Medication at Hospital Discharge' = "dbonemed1",
+                          'Post-operative Delirium Assessment' = "delassess",
+                          'Oral Nutritional Supplements' = "ons",
+                          'First Day Walking' = "mobil2",
+                          'Discharge Destination from Acute Ward' = "wdest",
+                          'Bone Protection Medication at 120-day Follow-Up' = "fbonemed2"),
+            selected = "sex")
+```
+
+```{r histogram age server and ggplot}
+#| context: server
+
+output$plot2 <- renderPlot({
+    req(input$x2, input$facet2)
+  data_uni = data1 %>% filter(ahos_code==input$x2)
+    ggplot(data_uni, aes(x = age)) +
+      geom_histogram(bin_width = 2, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+      ggtitle(paste("Histogram of Patient Age for hospital", input$x2, "faceted by", input$facet2)) +
+      facet_wrap(~.data[[input$facet1]]) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(size=15)) 
+})
+```
+
+```{r histogram age output}
+#| panel: fill
+
+plotOutput("plot2")
+```
+
+
+
+
+
+
+

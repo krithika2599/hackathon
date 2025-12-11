@@ -38,6 +38,8 @@ data_raw <- read.csv('unsw_datathon_2025.csv')
 
 This dashboard is a tool to benchmark hospital performance against the ACSQHC clinical quality indicators. <br>
 
+Each page represents one clinical care standard requirement and shows indicators that will support hospitals to monitor how well they are implementing the care recommended in these requirements and are intended to support local quality improvement activities.<br>
+
 ## Hospital Snapshot
 
 ### 
@@ -185,7 +187,7 @@ patients_2024 <- data_raw %>%
 </style>
 
 
-# QS 1 {#qs-1}
+# QS 1 {#qs-1 scrolling="true"}
 
 <h1><span style="color:#423A8E">Care at presentation</span></h1>
 
@@ -201,13 +203,13 @@ Proportion of patients with a hip fracture who were screened for cognitive impai
 
 ##
 
-<h2><span style="color:#423A8E">National Data</span></h2>
+<h3><span style="color:#423A8E">National Data</span></h3>
 
 ```{r, echo=FALSE}
 #| context: server
 
 patients_per_hosp_cogassess <- data_raw %>%
-  filter(cogassess %in% c(2, 3)) %>%
+  filter(cogassess %in% c(2, 3)) %>%   # keep only 2 or 3
   group_by(ahos_code) %>%
   summarise(n_patients = n(), .groups = "drop") %>%
   arrange(desc(n_patients))
@@ -216,15 +218,20 @@ totals <- data_raw %>%
   group_by(ahos_code) %>%
   summarise(total_patients = n(), .groups = "drop")
 
-result_cogassess <- patients_per_hosp_cogassess %>%
-  left_join(totals, by = "ahos_code") %>%
-  mutate(pct_2_or_3 = round(100 * n_patients / total_patients, 1))
+result_cogassess <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_23 = sum(cogassess %in% c(2, 3), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_2_or_3 = round(100 * n_23 / total_patients, 1))
 
 national_prop_cogassess <- data_raw %>%
   summarise(
-    n_total = 97429,
-    n_23    = sum(cogstat %in% c(2, 3), na.rm = TRUE),
-    prop_23 = round(100 * n_23 / n_total, 2)
+    n_total = n(),
+    n_23    = sum(cogassess %in% c(2, 3), na.rm = TRUE),
+    prop_23 = round(100 * n_23 / n_total, 1)
   )
 ```
 
@@ -235,23 +242,23 @@ output$indicator1a_plot <- renderPlot({
   req(result_cogassess, national_prop_cogassess)
 
   ggplot(result_cogassess,
-         aes(x = reorder(ahos_code, pct_2_or_3),
-             y = pct_2_or_3)) +
-    geom_col(fill = "steelblue") +
-    geom_hline(yintercept = national_prop_cogassess$prop_23,
-               color = "red", linetype = "dashed") +
-    annotate("label",
-             x = 1,
-             y = max(result_cogassess$pct_2_or_3, na.rm = TRUE),
-             label = "National Proportion",
-             color = "red",
-             hjust = 0) +
-    labs(title = "Proportion Screened for Cognitive Impairment",
-         x = "Hospital",
-         y = "Proportion (%)") +
-    theme_minimal() +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank())
+       aes(x = reorder(ahos_code, pct_2_or_3), y = pct_2_or_3)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_cogassess$prop_23,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_cogassess,
+    aes(x = max(as.numeric(factor(result_cogassess$ahos_code))) * 0.9,
+        y = prop_23,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of Patients Screened for Cognitive Impairment on Presentation",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
 })
 ```
 
@@ -265,7 +272,7 @@ plotOutput("indicator1a_plot")
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 2 {#qs-2}
+# QS 2 {#qs-2 scrolling="true"}
 
 <h1><span style="color:#423A8E">Pain management</span></h1>
 
@@ -287,13 +294,150 @@ Proportion of patients with a hip fracture who received a nerve block prior to s
 
 ##
 
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_analges <- data_raw %>%
+  filter(analges %in% c(1, 2, 3)) %>% 
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_analges <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_123 = sum(analges %in% c(1, 2, 3), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_123 = round(100 * n_123 / total_patients, 1))
+
+national_prop_analges <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_123    = sum(analges %in% c(1, 2, 3), na.rm = TRUE),
+    prop_123 = round(100 * n_123 / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator2b_plot <- renderPlot({
+  req(result_analges, national_prop_analges)
+
+  ggplot(result_analges,
+       aes(x = reorder(ahos_code, pct_123), y = pct_123)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_analges$prop_123,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_analges,
+    aes(x = max(as.numeric(factor(result_analges$ahos_code))) * 0.9,
+        y = prop_123,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of patients who received a nerve block prior to surgery",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator2b_plot")
+```
+
+##
+
 <h2><span style="color:#423A8E">Indicator 2c</span></h2>
 
 Proportion of patients with a hip fracture who were transferred from another hospital for treatment who received a nerve block prior to transfer.
 
+##
+
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+transferred <- data_raw %>% filter(e_dadmit %in% c(2,4))
+
+patients_per_hosp_tfanalges <- transferred  %>%
+  filter(tfanalges %in% c(2)) %>% 
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+total_trans <- transferred %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_tfanalges <- transferred  %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_2 = sum(tfanalges %in% c(2), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_2 = round(100 * n_2 / total_patients, 1))
+
+national_prop_tfanalges <- transferred %>%
+  summarise(
+    n_total = n(),
+    n_2    = sum(tfanalges %in% c(2), na.rm = TRUE),
+    prop_2 = round(100 * n_2 / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator2c_plot <- renderPlot({
+  req(result_tfanalges, national_prop_tfanalges)
+
+  ggplot(result_tfanalges,
+       aes(x = reorder(ahos_code, pct_2), y = pct_2)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_tfanalges$prop_2,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_tfanalges,
+    aes(x = max(as.numeric(factor(result_tfanalges$ahos_code))) * 0.9,
+        y = prop_2,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of patients transferred from another hospital who received a nerve block prior to transfer",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator2c_plot")
+```
+
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 3 {#qs-3}
+# QS 3 {#qs-3 scrolling="true"}
 
 <h1><span style="color:#423A8E">Orthogeriatric model of care</span></h1>
 
@@ -309,9 +453,153 @@ Proportion of patients with a hip fracture who had a clinical frailty assessment
 
 ##
 
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_frailty <- data_raw %>%
+  filter(frailty %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) %>% 
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+# Per-hospital frailty documentation
+result_frailty <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_all = sum(frailty %in% 1:10, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_all = round(100 * n_all / total_patients, 1))
+
+# National frailty documentation proportion
+national_prop_frailty <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_all  = sum(frailty %in% 1:10, na.rm = TRUE),
+    prop_all = round(100 * n_all / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator3a_plot <- renderPlot({
+  req(result_frailty, national_prop_frailty)
+
+  ggplot(result_frailty,
+         aes(x = reorder(ahos_code, pct_all), y = pct_all)) +
+    geom_col(fill = "steelblue") +
+    geom_hline(yintercept = national_prop_frailty$prop_all,
+               color = "red", linetype = "dashed", size = 1) +
+    geom_label(
+      data = national_prop_frailty,
+      aes(
+        x = max(as.numeric(factor(result_frailty$ahos_code))) * 0.9,
+        y = prop_all,
+        label = "National Proportion"
+      ),
+      inherit.aes = FALSE,
+      color = "red", size = 3
+    ) +
+    labs(
+      title = "Proportion of patients with a recorded frailty score",
+      x = "Operating Hospital",
+      y = "Patients with frailty recorded (%)"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x  = element_blank(),
+      axis.ticks.x = element_blank()
+    )
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator3a_plot")
+```
+
+
+##
+
 <h2><span style="color:#423A8E">Indicator 3b</span></h2>
 
 Proportion of admitted patients with a hip fracture who were assessed for delirium after surgery.
+
+##
+
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_delassess <- data_raw %>%
+  filter(delassess %in% c(2, 3)) %>%   # keep only 2 or 3
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_delassess <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_23 = sum(delassess %in% c(2, 3), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_2_or_3 = round(100 * n_23 / total_patients, 1))
+
+national_prop_delassess <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_23    = sum(cogassess %in% c(2, 3), na.rm = TRUE),
+    prop_23 = round(100 * n_23 / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator3b_plot <- renderPlot({
+  req(result_delassess, national_prop_delassess)
+
+  ggplot(result_delassess,
+       aes(x = reorder(ahos_code, pct_2_or_3), y = pct_2_or_3)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_delassess$prop_23,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_delassess,
+    aes(x = max(as.numeric(factor(result_delassess$ahos_code))) * 0.9,
+        y = prop_23,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of patients who were assessed for delirium after surgery",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator3b_plot")
+```
 
 ##
 
@@ -319,9 +607,80 @@ Proportion of admitted patients with a hip fracture who were assessed for deliri
 
 Proportion of admitted patients with a hip fracture who received protein and energy oral nutritional supplements during their admission.
 
+##
+
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_ons <- data_raw  %>%
+  filter(ons %in% c(2)) %>% 
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+total <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_ons <- data_raw  %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_2 = sum(ons %in% c(2), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_2 = round(100 * n_2 / total_patients, 1))
+
+national_prop_ons <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_2    = sum(ons %in% c(2), na.rm = TRUE),
+    prop_2 = round(100 * n_2 / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator3c_plot <- renderPlot({
+  req(result_ons, national_prop_ons)
+
+  ggplot(result_ons,
+       aes(x = reorder(ahos_code, pct_2), y = pct_2)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_ons$prop_2,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_ons,
+    aes(x = max(as.numeric(factor(result_ons$ahos_code))) * 0.9,
+        y = prop_2,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of patients who received protein and energy oral nutritional supplements",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator3c_plot")
+```
+
+2
+
+##
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 4 {#qs-4}
+# QS 4 {#qs-4 scrolling="true"}
 
 <h1><span style="color:#423A8E">Timing of surgery</span></h1>
 
@@ -335,7 +694,7 @@ Proportion of admitted patients with a hip fracture who received surgery within 
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 5 {#qs-5}
+# QS 5 {#qs-5 scrolling="true"}
 
 <h1><span style="color:#423A8E">Mobilisation and weight bearing</span></h1>
 
@@ -357,7 +716,7 @@ Proportion of admitted patients with a hip fracture who experienced a new Stage-
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 6 {#qs-6}
+# QS 6 {#qs-6 scrolling="true"}
 
 <h1><span style="color:#423A8E">Minimising risk of another fracture</span></h1>
 
@@ -372,7 +731,7 @@ Proportion of admitted patients with a hip fracture who received bone protection
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 7 {#qs-7}
+# QS 7 {#qs-7 scrolling="true"}
 
 <h1><span style="color:#423A8E">Transition from hospital care</span></h1>
 

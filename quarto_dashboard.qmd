@@ -41,12 +41,21 @@ This dashboard is a tool to benchmark hospital performance against the ACSQHC cl
 
 ### 
 
+```{r include=FALSE, echo = FALSE}
+alive_not_discharged <- data_raw %>%
+  filter(mort365d  != 2 & (tarrdatetime_year>2023 | arrdatetime_year>2023 |admdatetimeop_year>2023) & is.na(hdisch_year))
+
+patients_2024 <- data_raw %>%
+  filter(tarrdatetime_year==2024 | arrdatetime_year==2024 |admdatetimeop_year==2024)
+```
+
+
 <h2><span style="color:#423A8E">Hospital Snapshot</span></h2>
 
 
 <div class="kpi-cards">
   <div class="kpi-card" style="background-color:#FFC107;">
-   Active Patients <br>`r nrow(data_raw)`
+   Active Patients <br>`r nrow(alive_not_discharged)`
   </div>
 
   <div class="kpi-card" style="background-color:#DC3545;">
@@ -54,7 +63,7 @@ This dashboard is a tool to benchmark hospital performance against the ACSQHC cl
   </div>
 
   <div class="kpi-card" style="background-color:#198754;">
-   2022 Records <br>`r nrow(data_raw)`
+   2024 Records <br>`r nrow(patients_2024)`
   </div>
 
   <div class="kpi-card" style="background-color:#0D6EFD;">

@@ -1,0 +1,111 @@
+---
+title: "Time variable cleaning"
+author: "Decoder Maverick"
+date: "2025-12-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# import libraries
+library(tidyverse)
+library(dplyr)
+library(hms)
+```
+
+```{r}
+hip_data <- read.csv("unsw_datathon_2025.csv")
+head(hip_data)
+```
+
+
+```{r}
+glimpse(hip_data)
+```
+
+```{r}
+hip_data$e_dadmit
+```
+
+## Time from admissions
+
+```{r}
+# Transfer time
+hip_data$tarrdatetime_hms
+```
+
+```{r}
+# Operation time 
+hip_data$arrdatetime_hms
+```
+
+```{r}
+# Inpatient time 
+hip_data$admdatetimeop_hms
+```
+
+# Time of surgery
+
+```{r}
+# hip fracture surgery time 
+hip_data$sdatetime_hms
+```
+```{r}
+
+
+hip_data <- hip_data %>%
+  mutate(
+    #admission_time = case_when(
+      #!is.na(admdatetimeop_hms) ~ admdatetimeop_hms,
+      #!is.na(tarrdatetime_hms) ~ tarrdatetime_hms,
+      #!is.na(arrdatetime_hms) ~ arrdatetime_hms)
+      admission_time = coalesce(admdatetimeop_hms, tarrdatetime_hms, arrdatetime_hms)
+)
+
+
+hip_data <- hip_data %>%
+  mutate(
+    admission_time    = as_hms(admission_time),
+    surgery_time = as_hms(sdatetime_hms),
+
+    diff_sec = as.numeric(surgery_time - admission_time),
+
+    # FIX: if surgery is "earlier", assume next day
+    diff_sec = ifelse(diff_sec < 0, diff_sec + 24*3600, diff_sec),
+
+    diff_hours = diff_sec / 3600
+  )
+```
+
+```{r}
+hip_data$diff_hours
+```
+
+```{r}
+# Check number of na values
+zeros <- hip_data %>% filter(diff_hours == 0)
+nrow(zeros)
+
+#hours are zero but there is difference in seconds
+```
+```{r}
+nrow(hip_data)
+```
+
+
+```{r}
+# Check number of na values
+sum(is.na(hip_data$diff_hours))
+```
+
+```{r}
+hip_data <- hip_data %>%
+  mutate(
+    surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
+  )
+hip_data$surgery_indicator
+```

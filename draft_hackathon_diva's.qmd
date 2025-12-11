@@ -1,0 +1,836 @@
+---
+title: "Hip Fracture Dashboard"
+format:
+  html:
+    theme: cosmo        # atau "flatly", dsb.
+    toc: true
+    code-fold: show
+    df-print: paged
+    smooth-scroll: true
+execute:
+  echo: false  
+---
+
+```{r, results="hide"}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(cobalt)
+library(compareGroups)
+library(janitor)
+library(scales)
+library(hms)
+library(plotly)
+```
+
+
+```{r, results="hide"}
+data_raw <- read.csv('unsw_datathon_2025(in).csv')
+head(data_raw)
+```
+
+
+```{r, results="hide"}
+dim(data_raw) # 76 cols, 97429 rows
+
+summary(data_raw)
+```
+
+<!-- Pilih variabel--> 
+
+```{r, results="hide"}
+hip_data <- data_raw %>%
+select(
+ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk,
+cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay,
+analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest,
+fbonemed2, mort30d, mort90d, mort120d, mort365d,
+tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms
+)
+
+dim(hip_data)
+```
+
+```{r, results="hide"}
+summary(hip_data)
+```
+
+<!-- Konversi faktor & kategori umur--> 
+
+```{r, results="hide"}
+hip_data <- hip_data %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  cogstat = factor(cogstat, levels = c(1,2), label = c('Normal cognition', 'Impaired cognition')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT')),
+  mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased'))
+)
+```
+
+```{r, results="hide"}
+head(hip_data)
+```
+
+```{r, results="hide"}
+data1 <- hip_data |>
+  mutate(
+    age_cat = cut(
+      age,
+      breaks = c(50, 60, 70, 80, 90, 100, 110),
+      labels = c("50–59", "60–69", "70–79", "80–89", "90–99", "100–109"),
+      right = TRUE,   # interval: (a,b]
+      include.lowest = TRUE
+    )
+  )
+```
+
+```{r, results="hide"}
+nrow(hip_data)
+
+table(data1$sex, useNA = "ifany")
+
+table(data1$age_cat, useNA = "ifany")
+```
+
+<!-- ###3) Overall summary (for clinicians)-->
+
+```{r}
+overview_tbl <- hip_data %>%
+summarise(
+`Number of patients`   = n(),
+`Median age`           = median(age, na.rm = TRUE),
+`IQR age`              = IQR(age, na.rm = TRUE),
+`Female (%)`           = mean(sex == "Female", na.rm = TRUE) * 100,
+`30-day mortality (%)` = mean(mort30d == "Deceased", na.rm = TRUE) * 100,
+`90-day mortality (%)` = mean(mort90d == "Deceased", na.rm = TRUE) * 100,
+`1-year mortality (%)` = mean(mort365d == "Deceased", na.rm = TRUE) * 100
+) %>%
+mutate(dplyr::across(where(is.numeric), ~round(., 1)))
+
+knitr::kable(overview_tbl, caption = "Overall patient characteristics and outcomes")
+```
+
+
+<!-- ### 4) Create ACSQHC indicator flags (QS 1–6, 7 unavailable)
+
+Karena tidak ada tanggal, QS4 kita pakai delay == "No delay, surgery completed \<48 hours" sebagai pendekatan.--> 
+
+```{r}
+hip_data <- hip_data %>%
+  mutate(
+    # Indicator 1a: Cognitive screening at presentation
+    ind_1a = cogassess %in% c("Assessed and normal",
+                              "Assessed and abnormal or impaired"),
+
+    # Indicator 2a: Analgesia ≤30 minutes or not required
+    ind_2a = painmanage %in% c(
+      "Given within 30 minutes of ED presentation",
+      "Not required – already provided by paramedics",
+      "Not required – no pain documented on assessment"
+    ),
+
+    # Indicator 2b: Nerve block prior to surgery
+    ind_2b = analges %in% c("Nerve block administered before arriving in OT",
+                            "Both"),
+
+    # Transfer flag (for Indicator 2c)
+    transfer_flag = e_dadmit %in% c(
+      "No - transferred from another hospital(via ED)",
+      "No - transferred from another hospital (direct to ward)"
+    ),
+
+    # Indicator 2c: Nerve block prior to transfer (transfer patients only)
+    ind_2c = (tfanalges == "Yes") & transfer_flag,
+
+    # Indicator 3a: Clinical frailty assessment
+    ind_3a = !is.na(frailty),
+
+    # Indicator 3b: Delirium assessment after surgery
+    ind_3b = delassess %in% c("Assessed and not identified",
+                              "Assessed and identified"),
+
+    # Indicator 3c: Protein and energy oral nutritional supplements
+    ind_3c = ons == "Yes",
+
+    # Indicator 4a (proxy): Surgery without delay (<48 hours) using `delay`
+    ind_4a = delay == "No delay, surgery completed <48 hours",
+
+    # Indicator 5a: Mobilised on the day of, or the day after, surgery
+    ind_5a = mobil ==
+      "Patient out of bed and given opportunity to start mobilising day 1 post surgery",
+
+    # Indicator 5b: New Stage-II-or-higher pressure injury
+    ind_5b = pulcers == "Yes",
+
+    # Indicator 6a: Bone protection medicine in hospital / on discharge
+    ind_6a = (dbonemed1 %in% c(
+      "Yes - Calcium and/or vitamin D only",
+      "Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT",
+      "No but received prescription at separation from hospital"
+    )) | (fbonemed2 %in% c(
+      "Calcium and/or vitamin D only",
+      "Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT"
+    )),
+
+    # Indicator 7a: not available in this dataset (no care plan variable)
+    ind_7a = NA
+  )
+
+```
+
+
+<!--###5) Overall indicator rates (proxy “national” benchmark)-->
+
+```{r}
+indicator_overall <- tibble(
+indicator = c("1a","2a","2b","2c","3a","3b","3c","4a","5a","5b","6a"),
+description = c(
+"Cognitive screening at presentation",
+"Analgesia ≤30 minutes or not required",
+"Nerve block prior to surgery",
+"Nerve block prior to transfer (transfer patients)",
+"Clinical frailty assessment",
+"Delirium assessment after surgery",
+"Protein and energy ONS",
+"Surgery without delay (<48h, proxy via delay)",
+"Mobilised day of/day after surgery",
+"New Stage-II-or-higher pressure injury",
+"Bone protection medicine in hospital/on discharge"
+),
+var = c("ind_1a","ind_2a","ind_2b","ind_2c",
+"ind_3a","ind_3b","ind_3c","ind_4a",
+"ind_5a","ind_5b","ind_6a")
+) %>%
+rowwise() %>%
+mutate(
+overall_rate = mean(hip_data[[var]] %in% TRUE, na.rm = TRUE)
+) %>%
+ungroup() %>%
+mutate(`Overall rate (%)` = round(overall_rate * 100, 1)) %>%
+select(Indicator = indicator,
+Description = description,
+`Overall rate (%)`)
+
+knitr::kable(indicator_overall,
+caption = "Overall ACSQHC indicator rates (all hospitals combined)")
+```
+
+
+
+<!--###6) Helper proporsi rumah sakit-->
+
+```{r helpers}
+prop_by_hosp <- function(df, flag_col) {
+  df %>%
+    group_by(ahos_code) %>%
+    summarise(
+      denom = n(),
+      numer = sum(.data[[flag_col]] %in% TRUE, na.rm = TRUE),
+      prop  = numer / denom,
+      .groups = "drop"
+    )
+}
+
+# Line graph over hospitals (20 hospitals only)
+plot_line_hosp <- function(trend_df, title,
+                           ylab = "Proportion of patients",
+                           n_show = 20,
+                           direction = c("bottom", "top")) {
+
+  direction <- match.arg(direction)
+
+  df2 <- trend_df %>%
+    {
+      if (direction == "bottom") slice_min(., prop, n = n_show)
+      else                       slice_max(., prop, n = n_show)
+    } %>%
+    arrange(prop) %>%
+    mutate(
+      order    = row_number(),
+      ahos_code = as.character(ahos_code)
+    )
+
+  ggplot(df2, aes(x = order, y = prop)) +
+    geom_line(color = "#0072B2", linewidth = 1.2) +
+    geom_point(color = "#0072B2", size = 2) +
+    scale_x_continuous(
+      breaks = df2$order,
+      labels = df2$ahos_code
+    ) +
+    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    labs(
+      title = title,
+      x = "Hospital",
+      y = ylab
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+      plot.title  = element_text(face = "bold", color = "#0072B2")
+    )
+}
+```
+
+
+```{r donut_helpers, results="hide"}
+prop_for_donut <- function(df, flag_col) {
+  df %>%
+    mutate(
+      status = case_when(
+        .data[[flag_col]] %in% TRUE  ~ "Achieved",
+        .data[[flag_col]] %in% FALSE ~ "Not Achieved",
+        TRUE                         ~ "Missing"
+      )
+    ) %>%
+    count(status) %>%
+    mutate(
+      prop  = n / sum(n),
+      label = paste0(scales::comma(n), " (", scales::percent(prop, accuracy = 0.1), ")")
+    )
+}
+
+plot_donut <- function(df_donut, title) {
+
+  df2 <- df_donut %>%
+    arrange(desc(status)) %>%
+    mutate(
+      ypos = cumsum(prop) - 0.5 * prop   # posisi label di tengah setiap slice
+    )
+
+  ggplot(df2, aes(x = 2, y = prop, fill = status)) +
+    # donut ring
+    geom_col(width = 1, colour = "white") +
+    coord_polar(theta = "y") +
+    xlim(0.5, 2.7) +                      # kasih ruang di kanan untuk label
+
+    # label DI LUAR donut, dengan kotak putih
+    geom_label(
+      aes(
+        x     = 2.6,          # di luar ring
+        y     = ypos,
+        label = label
+      ),
+      color      = "black",
+      fill       = "white",
+      label.size = 0,
+      size       = 3
+    ) +
+
+    # warna slice
+    scale_fill_manual(
+      values = c(
+        "Achieved"     = "#45C0C5",
+        "Not Achieved" = "#D3D3D3",
+        "Missing"      = "#888888"
+      )
+    ) +
+
+    theme_void() +
+    labs(title = title, fill = NULL) +
+    theme(
+      plot.title      = element_text(face = "bold", size = 16, hjust = 0),
+      legend.position = "right",
+      legend.text     = element_text(size = 10)
+    )
+}
+
+```
+
+
+
+```{r}
+# Interactive bar chart per hospital with overall average line
+plot_bar_with_avg <- function(df, flag_col, title,
+                              ylab    = "Proportion of patients",
+                              n_show  = NA,                # NA = all hospitals
+                              direction = c("lowest", "highest")) {
+
+  direction <- match.arg(direction)
+
+  # Overall (proxy national) rate
+  overall <- mean(df[[flag_col]] %in% TRUE, na.rm = TRUE)
+
+  # Hospital-level proportions
+  hosp_df <- prop_by_hosp(df, flag_col) %>%
+    mutate(
+      ahos_code = as.character(ahos_code),
+      perf_cat  = if_else(
+        prop >= overall,
+        "At/above overall",
+        "Below overall"
+      ),
+      tooltip = paste0(
+        "Hospital: ", ahos_code,
+        "<br>Patients: ", denom,
+        "<br>Proportion: ", percent(prop, accuracy = 0.1),
+        "<br>Overall: ",   percent(overall, accuracy = 0.1)
+      )
+    )
+
+  # Optional: restrict to N hospitals
+  if (!is.na(n_show)) {
+    if (direction == "lowest") {
+      hosp_df <- hosp_df %>% slice_min(prop, n = n_show)
+    } else {
+      hosp_df <- hosp_df %>% slice_max(prop, n = n_show)
+    }
+  }
+
+  hosp_df <- hosp_df %>% arrange(prop)
+
+  p <- ggplot(hosp_df,
+              aes(x = reorder(ahos_code, prop),
+                  y = prop,
+                  fill = perf_cat,
+                  text = tooltip)) +
+    geom_col() +
+    geom_hline(yintercept = overall,
+               linetype   = "dashed",
+               colour     = "red",
+               linewidth  = 1) +
+    scale_fill_manual(
+      values = c(
+        "Below overall"    = "#ABD9E9",
+        "At/above overall" = "#2C7BB6"
+      ),
+      name = "Performance vs overall"
+    ) +
+    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    coord_flip() +
+    labs(
+      title = title,
+      x = "Hospital",
+      y = ylab
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.y = element_text(size = 6),
+      plot.title  = element_text(face = "bold", color = "#0072B2", size = 14)
+    )
+
+  ggplotly(p, tooltip = "text")
+}
+
+```
+
+
+
+<!--###7) Data quality: missingness of key variables-->
+
+```{r}
+missing_tbl <- hip_data %>%
+summarise(
+`cogassess (1a)` = mean(is.na(cogassess)),
+`painmanage (2a)`= mean(is.na(painmanage)),
+`analges (2b)`   = mean(is.na(analges)),
+`tfanalges (2c)` = mean(is.na(tfanalges)),
+`frailty (3a)`   = mean(is.na(frailty)),
+`delassess (3b)` = mean(is.na(delassess)),
+`ons (3c)`       = mean(is.na(ons)),
+`delay (4a)`     = mean(is.na(delay)),
+`mobil (5a)`     = mean(is.na(mobil)),
+`pulcers (5b)`   = mean(is.na(pulcers)),
+`dbonemed1/fbonemed2 (6a)` =
+mean(is.na(dbonemed1) & is.na(fbonemed2))
+) %>%
+pivot_longer(everything(),
+names_to = "Variable",
+values_to = "Missing_prop") %>%
+mutate(Missing_prop = Missing_prop * 100)
+
+ggplot(missing_tbl,
+aes(x = reorder(Variable, Missing_prop),
+y = Missing_prop)) +
+geom_col(fill = "#FF8C42") +
+coord_flip() +
+labs(
+title = "Data completeness for key indicator variables",
+x = NULL,
+y = "Missing (%)"
+) +
+theme_minimal(base_size = 11)
+
+```
+
+
+<!--###8) Visualisasi QS 1–6 (per rumah sakit)-->
+
+```{r}
+# Indicator 1a — Cognitive screening
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_1a"),
+  "Indicator 1a — Cognitive screening at presentation (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 2a — Analgesia ≤30 minutes or not required
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_2a"),
+  "Indicator 2a — Analgesia ≤30 minutes or not required (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 2b — Nerve block prior to surgery
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_2b"),
+  "Indicator 2b — Nerve block prior to surgery (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 2c — Nerve block prior to transfer (transfer patients)
+hip_data_transfer <- hip_data %>% filter(transfer_flag)
+plot_line_hosp(
+  prop_by_hosp(hip_data_transfer, "ind_2c"),
+  "Indicator 2c — Nerve block prior to transfer (transfer patients, 20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 3a — Clinical frailty assessment
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_3a"),
+  "Indicator 3a — Clinical frailty assessment (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 3b — Delirium assessment after surgery
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_3b"),
+  "Indicator 3b — Delirium assessment after surgery (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 3c — Protein and energy oral nutritional supplements
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_3c"),
+  "Indicator 3c — Protein and energy oral nutritional supplements (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 4a — Surgery without delay (<48 hours) [proxy using `delay`]
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_4a"),
+  "Indicator 4a — Surgery without delay (<48 hours) (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 5a — Mobilised on day of / day after surgery
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_5a"),
+  "Indicator 5a — Mobilised on day of, or day after, surgery (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+# Indicator 5b — New Stage-II-or-higher pressure injury (higher is worse)
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_5b"),
+  "Indicator 5b — New Stage-II-or-higher pressure injury (20 highest hospitals)",
+  direction = "top"
+)
+
+# Indicator 6a — Bone protection medicine in hospital / on discharge
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_6a"),
+  "Indicator 6a — Bone protection medicine (20 lowest hospitals)",
+  direction = "bottom"
+)
+
+```
+
+
+```{r}
+
+# Indicator 1a
+plot_donut(
+  prop_for_donut(hip_data, "ind_1a"),
+  "Indicator 1a — Cognitive screening at presentation"
+)
+
+# Indicator 2a
+plot_donut(
+  prop_for_donut(hip_data, "ind_2a"),
+  "Indicator 2a — Analgesia ≤30 minutes or not required"
+)
+
+# Indicator 2b
+plot_donut(
+  prop_for_donut(hip_data, "ind_2b"),
+  "Indicator 2b — Nerve block prior to surgery"
+)
+
+# Indicator 2c (transfer only)
+plot_donut(
+  prop_for_donut(hip_data_transfer, "ind_2c"),
+  "Indicator 2c — Nerve block prior to transfer (transfer patients)"
+)
+
+# Indicator 3a
+plot_donut(
+  prop_for_donut(hip_data, "ind_3a"),
+  "Indicator 3a — Clinical frailty assessment"
+)
+
+# Indicator 3b
+plot_donut(
+  prop_for_donut(hip_data, "ind_3b"),
+  "Indicator 3b — Delirium assessment after surgery"
+)
+
+# Indicator 3c
+plot_donut(
+  prop_for_donut(hip_data, "ind_3c"),
+  "Indicator 3c — Protein and energy ONS"
+)
+
+# Indicator 4a — proxy using `delay`
+plot_donut(
+  prop_for_donut(hip_data, "ind_4a"),
+  "Indicator 4a — Surgery without delay (<48 hours)"
+)
+
+# Indicator 5a
+plot_donut(
+  prop_for_donut(hip_data, "ind_5a"),
+  "Indicator 5a — Mobilised on day of/day after surgery"
+)
+
+# Indicator 5b
+plot_donut(
+  prop_for_donut(hip_data, "ind_5b"),
+  "Indicator 5b — New stage-II-or-higher pressure injury"
+)
+
+# Indicator 6a
+plot_donut(
+  prop_for_donut(hip_data, "ind_6a"),
+  "Indicator 6a — Bone protection medicine given"
+)
+
+```
+
+
+<!--### Proporsi per RS Interactive-->
+
+```{r all hospital_bars_with_avg}
+## 11a) Benchmarking — all hospitals (bar + average line)
+# Indicator 1a
+plot_bar_with_avg(
+  hip_data,
+  "ind_1a",
+  "Indicator 1a — Cognitive screening at presentation (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 2a
+plot_bar_with_avg(
+  hip_data,
+  "ind_2a",
+  "Indicator 2a — Analgesia ≤30 minutes or not required (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 2b
+plot_bar_with_avg(
+  hip_data,
+  "ind_2b",
+  "Indicator 2b — Nerve block prior to surgery (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 2c (transfer only)
+plot_bar_with_avg(
+  hip_data_transfer,
+  "ind_2c",
+  "Indicator 2c — Nerve block prior to transfer (transfer patients, all hospitals)",
+  n_show = NA
+)
+
+# Indicator 3a
+plot_bar_with_avg(
+  hip_data,
+  "ind_3a",
+  "Indicator 3a — Clinical frailty assessment (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 3b
+plot_bar_with_avg(
+  hip_data,
+  "ind_3b",
+  "Indicator 3b — Delirium assessment after surgery (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 3c
+plot_bar_with_avg(
+  hip_data,
+  "ind_3c",
+  "Indicator 3c — Protein and energy ONS (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 4a (proxy)
+plot_bar_with_avg(
+  hip_data,
+  "ind_4a",
+  "Indicator 4a — Surgery without delay (<48 hours; proxy, all hospitals)",
+  n_show = NA
+)
+
+# Indicator 5a
+plot_bar_with_avg(
+  hip_data,
+  "ind_5a",
+  "Indicator 5a — Mobilised on day of/day after surgery (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 5b (adverse outcome)
+plot_bar_with_avg(
+  hip_data,
+  "ind_5b",
+  "Indicator 5b — New Stage-II-or-higher pressure injury (all hospitals)",
+  n_show = NA
+)
+
+# Indicator 6a
+plot_bar_with_avg(
+  hip_data,
+  "ind_6a",
+  "Indicator 6a — Bone protection medicine given (all hospitals)",
+  n_show = NA
+)
+
+```
+
+
+
+```{r}
+## 11b) Benchmarking — focus on 20 hospitals
+# 1a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_1a",
+  "Indicator 1a — Cognitive screening at presentation (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 2a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_2a",
+  "Indicator 2a — Analgesia ≤30 minutes or not required (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 2b — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_2b",
+  "Indicator 2b — Nerve block prior to surgery (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 2c — 20 lowest (transfer)
+plot_bar_with_avg(
+  hip_data_transfer,
+  "ind_2c",
+  "Indicator 2c — Nerve block prior to transfer (transfer patients, 20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 3a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_3a",
+  "Indicator 3a — Clinical frailty assessment (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 3b — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_3b",
+  "Indicator 3b — Delirium assessment after surgery (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 3c — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_3c",
+  "Indicator 3c — Protein and energy ONS (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 4a — 20 lowest (proxy)
+plot_bar_with_avg(
+  hip_data,
+  "ind_4a",
+  "Indicator 4a — Surgery without delay (<48 hours; proxy, 20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 5a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_5a",
+  "Indicator 5a — Mobilised on day of/day after surgery (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+# 5b — 20 HIGHEST (adverse outcome)
+plot_bar_with_avg(
+  hip_data,
+  "ind_5b",
+  "Indicator 5b — New Stage-II-or-higher pressure injury (20 highest hospitals)",
+  n_show = 20,
+  direction = "highest"
+)
+
+# 6a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_6a",
+  "Indicator 6a — Bone protection medicine given (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
+
+```
+
+

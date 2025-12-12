@@ -184,8 +184,407 @@ patients_2024 <- data_raw %>%
 }
 </style>
 
+```{r, results="hide", include=FALSE}
+dim(data_raw) # 76 cols, 97429 rows
 
-# QS 1 {#qs-1}
+summary(data_raw)
+```
+
+```{r, results="hide", include=FALSE}
+hip_data <- data_raw %>%
+select(
+ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk,
+cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay,
+analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest,
+fbonemed2, mort30d, mort90d, mort120d, mort365d,
+tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms
+)
+
+dim(hip_data)
+```
+
+```{r, results="hide", include=FALSE}
+summary(hip_data)
+```
+
+```{r, results="hide", include=FALSE}
+hip_data <- hip_data %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  cogstat = factor(cogstat, levels = c(1,2), label = c('Normal cognition', 'Impaired cognition')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT')),
+  mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased'))
+)
+```
+
+```{r, results="hide", include=FALSE}
+head(hip_data)
+```
+
+```{r, results="hide", include=FALSE}
+data1 <- hip_data |>
+  mutate(
+    age_cat = cut(
+      age,
+      breaks = c(50, 60, 70, 80, 90, 100, 110),
+      labels = c("50–59", "60–69", "70–79", "80–89", "90–99", "100–109"),
+      right = TRUE,   # interval: (a,b]
+      include.lowest = TRUE
+    )
+  )
+```
+
+```{r, results="hide", include=FALSE}
+nrow(hip_data)
+
+table(data1$sex, useNA = "ifany")
+
+table(data1$age_cat, useNA = "ifany")
+```
+
+<!-- ###3) Overall summary (for clinicians)-->
+
+```{r include=FALSE}
+overview_tbl <- hip_data %>%
+summarise(
+`Number of patients`   = n(),
+`Median age`           = median(age, na.rm = TRUE),
+`IQR age`              = IQR(age, na.rm = TRUE),
+`Female (%)`           = mean(sex == "Female", na.rm = TRUE) * 100,
+`30-day mortality (%)` = mean(mort30d == "Deceased", na.rm = TRUE) * 100,
+`90-day mortality (%)` = mean(mort90d == "Deceased", na.rm = TRUE) * 100,
+`1-year mortality (%)` = mean(mort365d == "Deceased", na.rm = TRUE) * 100
+) %>%
+mutate(dplyr::across(where(is.numeric), ~round(., 1)))
+
+knitr::kable(overview_tbl, caption = "Overall patient characteristics and outcomes")
+```
+
+
+<!-- ### 4) Create ACSQHC indicator flags (QS 1–6, 7 unavailable)-->
+
+```{r include=FALSE}
+hip_data <- hip_data %>%
+  mutate(
+    # Indicator 1a: Cognitive screening at presentation
+    ind_1a = cogassess %in% c("Assessed and normal",
+                              "Assessed and abnormal or impaired"),
+
+    # Indicator 2a: Analgesia ≤30 minutes or not required
+    ind_2a = painmanage %in% c(
+      "Given within 30 minutes of ED presentation",
+      "Not required – already provided by paramedics",
+      "Not required – no pain documented on assessment"
+    ),
+
+    # Indicator 2b: Nerve block prior to surgery
+    ind_2b = analges %in% c("Nerve block administered before arriving in OT",
+                            "Both"),
+
+    # Transfer flag (for Indicator 2c)
+    transfer_flag = e_dadmit %in% c(
+      "No - transferred from another hospital(via ED)",
+      "No - transferred from another hospital (direct to ward)"
+    ),
+
+    # Indicator 2c: Nerve block prior to transfer (transfer patients only)
+    ind_2c = (tfanalges == "Yes") & transfer_flag,
+
+    # Indicator 3a: Clinical frailty assessment
+    ind_3a = !is.na(frailty),
+
+    # Indicator 3b: Delirium assessment after surgery
+    ind_3b = delassess %in% c("Assessed and not identified",
+                              "Assessed and identified"),
+
+    # Indicator 3c: Protein and energy oral nutritional supplements
+    ind_3c = ons == "Yes",
+
+    # Indicator 4a (proxy): Surgery without delay (<48 hours) using `delay`
+    ind_4a = delay == "No delay, surgery completed <48 hours",
+
+    # Indicator 5a: Mobilised on the day of, or the day after, surgery
+    ind_5a = mobil ==
+      "Patient out of bed and given opportunity to start mobilising day 1 post surgery",
+
+    # Indicator 5b: New Stage-II-or-higher pressure injury
+    ind_5b = pulcers == "Yes",
+
+    # Indicator 6a: Bone protection medicine in hospital / on discharge
+    ind_6a = (dbonemed1 %in% c(
+      "Yes - Calcium and/or vitamin D only",
+      "Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT",
+      "No but received prescription at separation from hospital"
+    )) | (fbonemed2 %in% c(
+      "Calcium and/or vitamin D only",
+      "Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT"
+    )),
+
+    # Indicator 7a: not available in this dataset (no care plan variable)
+    ind_7a = NA
+  )
+
+```
+
+
+<!--###5) Overall indicator rates (proxy “national” benchmark)-->
+
+```{r include=FALSE}
+indicator_overall <- tibble(
+indicator = c("1a","2a","2b","2c","3a","3b","3c","4a","5a","5b","6a"),
+description = c(
+"Cognitive screening at presentation",
+"Analgesia ≤30 minutes or not required",
+"Nerve block prior to surgery",
+"Nerve block prior to transfer (transfer patients)",
+"Clinical frailty assessment",
+"Delirium assessment after surgery",
+"Protein and energy ONS",
+"Surgery without delay (<48h, proxy via delay)",
+"Mobilised day of/day after surgery",
+"New Stage-II-or-higher pressure injury",
+"Bone protection medicine in hospital/on discharge"
+),
+var = c("ind_1a","ind_2a","ind_2b","ind_2c",
+"ind_3a","ind_3b","ind_3c","ind_4a",
+"ind_5a","ind_5b","ind_6a")
+) %>%
+rowwise() %>%
+mutate(
+overall_rate = mean(hip_data[[var]] %in% TRUE, na.rm = TRUE)
+) %>%
+ungroup() %>%
+mutate(`Overall rate (%)` = round(overall_rate * 100, 1)) %>%
+select(Indicator = indicator,
+Description = description,
+`Overall rate (%)`)
+
+knitr::kable(indicator_overall,
+caption = "Overall ACSQHC indicator rates (all hospitals combined)")
+
+
+hip_data_transfer <- hip_data %>% filter(transfer_flag)
+```
+
+```{r helpers, include=FALSE}
+prop_by_hosp <- function(df, flag_col) {
+  df %>%
+    group_by(ahos_code) %>%
+    summarise(
+      denom = n(),
+      numer = sum(.data[[flag_col]] %in% TRUE, na.rm = TRUE),
+      prop  = numer / denom,
+      .groups = "drop"
+    )
+}
+
+# Line graph over hospitals (20 hospitals only)
+plot_line_hosp <- function(trend_df, title,
+                           ylab = "Proportion of patients",
+                           n_show = 20,
+                           direction = c("bottom", "top")) {
+
+  direction <- match.arg(direction)
+
+  df2 <- trend_df %>%
+    {
+      if (direction == "bottom") slice_min(., prop, n = n_show)
+      else                       slice_max(., prop, n = n_show)
+    } %>%
+    arrange(prop) %>%
+    mutate(
+      order    = row_number(),
+      ahos_code = as.character(ahos_code)
+    )
+
+  ggplot(df2, aes(x = order, y = prop)) +
+    geom_line(color = "#0072B2", linewidth = 1.2) +
+    geom_point(color = "#0072B2", size = 2) +
+    scale_x_continuous(
+      breaks = df2$order,
+      labels = df2$ahos_code
+    ) +
+    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    labs(
+      title = title,
+      x = "Hospital",
+      y = ylab
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 6),
+      plot.title  = element_text(face = "bold", color = "#0072B2")
+    )
+}
+```
+
+
+```{r donut_helpers, results="hide", include=FALSE}
+prop_for_donut <- function(df, flag_col) {
+  df %>%
+    mutate(
+      status = case_when(
+        .data[[flag_col]] %in% TRUE  ~ "Achieved",
+        .data[[flag_col]] %in% FALSE ~ "Not Achieved",
+        TRUE                         ~ "Missing"
+      )
+    ) %>%
+    count(status) %>%
+    mutate(
+      prop  = n / sum(n),
+      label = paste0(scales::comma(n), " (", scales::percent(prop, accuracy = 0.1), ")")
+    )
+}
+
+plot_donut <- function(df_donut, title) {
+
+  df2 <- df_donut %>%
+    arrange(desc(status)) %>%
+    mutate(
+      ypos = cumsum(prop) - 0.5 * prop   # posisi label di tengah setiap slice
+    )
+
+  ggplot(df2, aes(x = 2, y = prop, fill = status)) +
+    # donut ring
+    geom_col(width = 1, colour = "white") +
+    coord_polar(theta = "y") +
+    xlim(0.5, 2.7) +                      # kasih ruang di kanan untuk label
+
+    # label DI LUAR donut, dengan kotak putih
+    geom_label(
+      aes(
+        x     = 2.6,          # di luar ring
+        y     = ypos,
+        label = label
+      ),
+      color      = "black",
+      fill       = "white",
+      label.size = 0,
+      size       = 3
+    ) +
+
+    # warna slice
+    scale_fill_manual(
+      values = c(
+        "Achieved"     = "#45C0C5",
+        "Not Achieved" = "#D3D3D3",
+        "Missing"      = "#888888"
+      )
+    ) +
+
+    theme_void() +
+    labs(title = title, fill = NULL) +
+    theme(
+      plot.title      = element_text(face = "bold", size = 16, hjust = 0),
+      legend.position = "right",
+      legend.text     = element_text(size = 10)
+    )
+}
+
+```
+
+
+
+```{r, include=FALSE}
+# Interactive bar chart per hospital with overall average line
+plot_bar_with_avg <- function(df, flag_col, title,
+                              ylab    = "Proportion of patients",
+                              n_show  = NA,                # NA = all hospitals
+                              direction = c("lowest", "highest")) {
+
+  direction <- match.arg(direction)
+
+  # Overall (proxy national) rate
+  overall <- mean(df[[flag_col]] %in% TRUE, na.rm = TRUE)
+
+  # Hospital-level proportions
+  hosp_df <- prop_by_hosp(df, flag_col) %>%
+    mutate(
+      ahos_code = as.character(ahos_code),
+      perf_cat  = if_else(
+        prop >= overall,
+        "At/above overall",
+        "Below overall"
+      ),
+      tooltip = paste0(
+        "Hospital: ", ahos_code,
+        "<br>Patients: ", denom,
+        "<br>Proportion: ", percent(prop, accuracy = 0.1),
+        "<br>Overall: ",   percent(overall, accuracy = 0.1)
+      )
+    )
+
+  # Optional: restrict to N hospitals
+  if (!is.na(n_show)) {
+    if (direction == "lowest") {
+      hosp_df <- hosp_df %>% slice_min(prop, n = n_show)
+    } else {
+      hosp_df <- hosp_df %>% slice_max(prop, n = n_show)
+    }
+  }
+
+  hosp_df <- hosp_df %>% arrange(prop)
+
+  p <- ggplot(hosp_df,
+              aes(x = reorder(ahos_code, prop),
+                  y = prop,
+                  fill = perf_cat,
+                  text = tooltip)) +
+    geom_col() +
+    geom_hline(yintercept = overall,
+               linetype   = "dashed",
+               colour     = "red",
+               linewidth  = 1) +
+    scale_fill_manual(
+      values = c(
+        "Below overall"    = "#ABD9E9",
+        "At/above overall" = "#2C7BB6"
+      ),
+      name = "Performance vs overall"
+    ) +
+    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    coord_flip() +
+    labs(
+      title = title,
+      x = "Hospital",
+      y = ylab
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.y = element_text(size = 6),
+      plot.title  = element_text(face = "bold", color = "#0072B2", size = 14)
+    )
+
+  ggplotly(p, tooltip = "text")
+}
+
+```
+
+# QS 1 {#qs-1 scrolling="true"}
 
 <h1><span style="color:#423A8E">Care at presentation</span></h1>
 
@@ -201,71 +600,19 @@ Proportion of patients with a hip fracture who were screened for cognitive impai
 
 ##
 
-<h2><span style="color:#423A8E">National Data</span></h2>
-
-```{r, echo=FALSE}
-#| context: server
-
-patients_per_hosp_cogassess <- data_raw %>%
-  filter(cogassess %in% c(2, 3)) %>%
-  group_by(ahos_code) %>%
-  summarise(n_patients = n(), .groups = "drop") %>%
-  arrange(desc(n_patients))
-
-totals <- data_raw %>%
-  group_by(ahos_code) %>%
-  summarise(total_patients = n(), .groups = "drop")
-
-result_cogassess <- patients_per_hosp_cogassess %>%
-  left_join(totals, by = "ahos_code") %>%
-  mutate(pct_2_or_3 = round(100 * n_patients / total_patients, 1))
-
-national_prop_cogassess <- data_raw %>%
-  summarise(
-    n_total = 97429,
-    n_23    = sum(cogstat %in% c(2, 3), na.rm = TRUE),
-    prop_23 = round(100 * n_23 / n_total, 2)
-  )
-```
-
-
-```{r, echo=FALSE}
-#| context: server
-output$indicator1a_plot <- renderPlot({
-  req(result_cogassess, national_prop_cogassess)
-
-  ggplot(result_cogassess,
-         aes(x = reorder(ahos_code, pct_2_or_3),
-             y = pct_2_or_3)) +
-    geom_col(fill = "steelblue") +
-    geom_hline(yintercept = national_prop_cogassess$prop_23,
-               color = "red", linetype = "dashed") +
-    annotate("label",
-             x = 1,
-             y = max(result_cogassess$pct_2_or_3, na.rm = TRUE),
-             label = "National Proportion",
-             color = "red",
-             hjust = 0) +
-    labs(title = "Proportion Screened for Cognitive Impairment",
-         x = "Hospital",
-         y = "Proportion (%)") +
-    theme_minimal() +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank())
-})
-```
-
-```{r, echo=FALSE}
-#| context: render
-#| panel: fill
-plotOutput("indicator1a_plot")
+```{r echo=FALSE}
+# Indicator 1a
+plot_donut(
+  prop_for_donut(hip_data, "ind_1a"),
+  "Cognitive Screening at Presentation (%)"
+)
 ```
 
 ##
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 2 {#qs-2}
+# QS 2 {#qs-2 scrolling="true"}
 
 <h1><span style="color:#423A8E">Pain management</span></h1>
 
@@ -281,9 +628,29 @@ Proportion of patients with a hip fracture who either received analgesia within 
 
 ##
 
+```{r echo=FALSE}
+# Indicator 2a
+plot_donut(
+  prop_for_donut(hip_data, "ind_2a"),
+  "Timely Analgesia Rate (%)"
+)
+```
+
+##
+
 <h2><span style="color:#423A8E">Indicator 2b</span></h2>
 
 Proportion of patients with a hip fracture who received a nerve block prior to surgery.
+
+##
+
+```{r echo=FALSE}
+# Indicator 2b
+plot_donut(
+  prop_for_donut(hip_data, "ind_2b"),
+  "Nerve Block Prior to Surgery (%)"
+)
+```
 
 ##
 
@@ -291,9 +658,20 @@ Proportion of patients with a hip fracture who received a nerve block prior to s
 
 Proportion of patients with a hip fracture who were transferred from another hospital for treatment who received a nerve block prior to transfer.
 
+##
+
+```{r echo=FALSE}
+# Indicator 2c (transfer only)
+plot_donut(
+  prop_for_donut(hip_data_transfer, "ind_2c"),
+  "Nerve Block Prior to Transfer (%)"
+)
+```
+
+##
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 3 {#qs-3}
+# QS 3 {#qs-3 scrolling="true"}
 
 <h1><span style="color:#423A8E">Orthogeriatric model of care</span></h1>
 
@@ -307,11 +685,31 @@ Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r form
 
 Proportion of patients with a hip fracture who had a clinical frailty assessment using a validated tool.
 
+## 
+
+```{r echo=FALSE}
+# Indicator 3a
+plot_donut(
+  prop_for_donut(hip_data, "ind_3a"),
+  "Clinical Frailty Assessment Rate (%)"
+)
+```
+
 ##
 
 <h2><span style="color:#423A8E">Indicator 3b</span></h2>
 
 Proportion of admitted patients with a hip fracture who were assessed for delirium after surgery.
+
+## 
+
+```{r echo=FALSE}
+# Indicator 3b
+plot_donut(
+  prop_for_donut(hip_data, "ind_3b"),
+  "Post-Operative Delirium Assessment (%)"
+)
+```
 
 ##
 
@@ -319,9 +717,19 @@ Proportion of admitted patients with a hip fracture who were assessed for deliri
 
 Proportion of admitted patients with a hip fracture who received protein and energy oral nutritional supplements during their admission.
 
+##
+
+```{r echo=FALSE}
+# Indicator 3c
+plot_donut(
+  prop_for_donut(hip_data, "ind_3c"),
+  "Protein and Energy ONS Provided (%)"
+)
+```
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 4 {#qs-4}
+# QS 4 {#qs-4 scrolling="true"}
 
 <h1><span style="color:#423A8E">Timing of surgery</span></h1>
 
@@ -329,13 +737,26 @@ A person with a hip fracture receives surgery within 36 hours of their first pre
 
 Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
 
+## 
 <h2><span style="color:#423A8E">Indicator 4a</span></h2>
 
 Proportion of admitted patients with a hip fracture who received surgery within 36 hours of presentation to first hospital.
 
+## 
+
+```{r echo=FALSE}
+# Indicator 4a — proxy using `delay`
+plot_donut(
+  prop_for_donut(hip_data, "ind_4a"),
+  "Surgery Within 48 Hours (%)"
+)
+```
+
+##
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 5 {#qs-5}
+# QS 5 {#qs-5 scrolling="true"}
 
 <h1><span style="color:#423A8E">Mobilisation and weight bearing</span></h1>
 
@@ -351,13 +772,36 @@ Proportion of admitted patients with a hip fracture who were mobilised the day o
 
 ##
 
+```{r echo=FALSE}
+# Indicator 5a
+plot_donut(
+  prop_for_donut(hip_data, "ind_5a"),
+  "Early Mobilisation (Day of or Day After Surgery) (%)"
+)
+```
+
+##
+
 <h2><span style="color:#423A8E">Indicator 5b</span></h2>
 
 Proportion of admitted patients with a hip fracture who experienced a new Stage-II-or-higher pressure injury.
 
+
+## 
+
+```{r echo=FALSE}
+# Indicator 5b
+plot_donut(
+  prop_for_donut(hip_data, "ind_5b"),
+  "New Stage II or Pressure Injuries (%)"
+)
+```
+
+##
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 6 {#qs-6}
+# QS 6 {#qs-6 scrolling="true"}
 
 <h1><span style="color:#423A8E">Minimising risk of another fracture</span></h1>
 
@@ -365,20 +809,36 @@ Before a person leaves hospital after a hip fracture, they receive a falls and b
 
 Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
 
+##
+
 <h2><span style="color:#423A8E">Indicator 6a</span></h2>
 
 Proportion of admitted patients with a hip fracture who received bone protection medicine while in hospital or a prescription prior to separation from hospital.
 
+## 
+
+```{r echo=FALSE}
+# Indicator 6a
+plot_donut(
+  prop_for_donut(hip_data, "ind_6a"),
+  "Bone Protection Medication Given (%)"
+)
+
+```
+
+##
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 7 {#qs-7}
+# QS 7 {#qs-7 scrolling="true"}
 
 <h1><span style="color:#423A8E">Transition from hospital care</span></h1>
 
 Before a person leaves hospital after a hip fracture, an individualised care plan is developed that describes their goals of care and ongoing care needs. This plan is developed in discussion with the person and their family or support people. The plan includes mobilisation activities and expected function post-injury, wound care, pain management, nutrition, fracture prevention strategies, changed or new medicines, and specific rehabilitation services and equipment. On discharge, the plan is provided to the person and communicated with their general practice and other ongoing clinicians and care providers.
 
 Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
+
+##
 
 <h2><span style="color:#423A8E">Indicator 7a</span></h2>
 

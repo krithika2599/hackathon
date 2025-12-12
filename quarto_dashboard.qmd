@@ -307,6 +307,7 @@ mutate(dplyr::across(where(is.numeric), ~round(., 1)))
 
 ```{r, results="hide", include=FALSE}
 dim(data_raw) # 76 cols, 97429 rows
+```
 
 ##  {height="1500px"}
 
@@ -321,7 +322,6 @@ dim(data_raw) # 76 cols, 97429 rows
     <a href="#qs-1" class="page-button__link">
       <div class="page-button__header">Quality Standard 1: Care at presentation</div>
       <div class="page-button__body">Indicator 1a: Cognitive screening at presentation</div>
-      <img src="images/image_path.png">
     </a>
   </div>
 
@@ -331,7 +331,6 @@ dim(data_raw) # 76 cols, 97429 rows
       <div class="page-button__body">Indicator 2a: Received analgesia ≤30 minutes within presentation</div>
       <div class="page-button__body">Indicator 2b: Nerve block prior to surgery Indicator</div>
       <div class="page-button__body">Indicator 2c: Nerve block prior to transfer (transfer patients)</div>
-      <img src="images/image_path.jpg" alt="Description of the image">
     </a>
   </div>
 
@@ -444,9 +443,6 @@ dim(data_raw) # 76 cols, 97429 rows
   }
 }
 </style>
-
-
-# Quality Standard 1 {#qs-1}
 
 ```{r, results="hide", include=FALSE}
 hip_data <- data_raw %>%
@@ -842,7 +838,7 @@ plot_bar_with_avg <- function(df, flag_col, title,
 
 ```
 
-# QS 1 {#qs-1 scrolling="true"}
+# Quality Standard 1 {#qs-1 scrolling="true"}
 
 <h1><span style="color:#423A8E">Care at presentation</span></h1>
 
@@ -927,6 +923,7 @@ plot_donut(
 ```
 
 ##
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
 # Quality Standard 3 {#qs-3 scrolling="true"}
@@ -955,83 +952,6 @@ plot_donut(
 
 ##
 
-<h3><span style="color:#423A8E">National Data</span></h3>
-
-```{r, echo=FALSE}
-#| context: server
-
-patients_per_hosp_frailty <- data_raw %>%
-  filter(frailty %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) %>% 
-  group_by(ahos_code) %>%
-  summarise(n_patients = n(), .groups = "drop") %>%
-  arrange(desc(n_patients))
-
-totals <- data_raw %>%
-  group_by(ahos_code) %>%
-  summarise(total_patients = n(), .groups = "drop")
-
-# Per-hospital frailty documentation
-result_frailty <- data_raw %>%
-  group_by(ahos_code) %>%
-  summarise(
-    total_patients = n(),
-    n_all = sum(frailty %in% 1:10, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(pct_all = round(100 * n_all / total_patients, 1))
-
-# National frailty documentation proportion
-national_prop_frailty <- data_raw %>%
-  summarise(
-    n_total = n(),
-    n_all  = sum(frailty %in% 1:10, na.rm = TRUE),
-    prop_all = round(100 * n_all / n_total, 1)
-  )
-```
-
-
-```{r, echo=FALSE}
-#| context: server
-output$indicator3a_plot <- renderPlot({
-  req(result_frailty, national_prop_frailty)
-
-  ggplot(result_frailty,
-         aes(x = reorder(ahos_code, pct_all), y = pct_all)) +
-    geom_col(fill = "steelblue") +
-    geom_hline(yintercept = national_prop_frailty$prop_all,
-               color = "red", linetype = "dashed", size = 1) +
-    geom_label(
-      data = national_prop_frailty,
-      aes(
-        x = max(as.numeric(factor(result_frailty$ahos_code))) * 0.9,
-        y = prop_all,
-        label = "National Proportion"
-      ),
-      inherit.aes = FALSE,
-      color = "red", size = 3
-    ) +
-    labs(
-      title = "Proportion of patients with a recorded frailty score",
-      x = "Operating Hospital",
-      y = "Patients with frailty recorded (%)"
-    ) +
-    theme_minimal() +
-    theme(
-      axis.text.x  = element_blank(),
-      axis.ticks.x = element_blank()
-    )
-})
-```
-
-```{r, echo=FALSE}
-#| context: render
-#| panel: fill
-plotOutput("indicator3a_plot")
-```
-
-
-##
-
 <h2><span style="color:#423A8E">Indicator 3b</span></h2>
 
 Proportion of admitted patients with a hip fracture who were assessed for delirium after surgery.
@@ -1044,73 +964,6 @@ plot_donut(
   prop_for_donut(hip_data, "ind_3b"),
   "Post-Operative Delirium Assessment (%)"
 )
-```
-
-##
-
-<h3><span style="color:#423A8E">National Data</span></h3>
-
-```{r, echo=FALSE}
-#| context: server
-
-patients_per_hosp_delassess <- data_raw %>%
-  filter(delassess %in% c(2, 3)) %>%   # keep only 2 or 3
-  group_by(ahos_code) %>%
-  summarise(n_patients = n(), .groups = "drop") %>%
-  arrange(desc(n_patients))
-
-totals <- data_raw %>%
-  group_by(ahos_code) %>%
-  summarise(total_patients = n(), .groups = "drop")
-
-result_delassess <- data_raw %>%
-  group_by(ahos_code) %>%
-  summarise(
-    total_patients = n(),
-    n_23 = sum(delassess %in% c(2, 3), na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(pct_2_or_3 = round(100 * n_23 / total_patients, 1))
-
-national_prop_delassess <- data_raw %>%
-  summarise(
-    n_total = n(),
-    n_23    = sum(cogassess %in% c(2, 3), na.rm = TRUE),
-    prop_23 = round(100 * n_23 / n_total, 1)
-  )
-```
-
-
-```{r, echo=FALSE}
-#| context: server
-output$indicator3b_plot <- renderPlot({
-  req(result_delassess, national_prop_delassess)
-
-  ggplot(result_delassess,
-       aes(x = reorder(ahos_code, pct_2_or_3), y = pct_2_or_3)) +
-  geom_col(fill = "steelblue") +
-  geom_hline(yintercept = national_prop_delassess$prop_23,
-             color = "red", linetype = "dashed", size = 1) +
-  geom_label(
-    data = national_prop_delassess,
-    aes(x = max(as.numeric(factor(result_delassess$ahos_code))) * 0.9,
-        y = prop_23,
-        label = "National Proportion"),
-    inherit.aes = FALSE,
-    color = "red", size = 3
-  ) +
-  labs(title = "Proportion of patients who were assessed for delirium after surgery",
-       x = "Operating Hospital", y = "Patients screened (%)") +
-  theme_minimal() +
-  theme(axis.text.x  = element_blank(),
-        axis.ticks.x = element_blank())
-})
-```
-
-```{r, echo=FALSE}
-#| context: render
-#| panel: fill
-plotOutput("indicator3b_plot")
 ```
 
 ##
@@ -1128,6 +981,8 @@ plot_donut(
   "Protein and Energy ONS Provided (%)"
 )
 ```
+
+##
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 

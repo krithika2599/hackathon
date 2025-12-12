@@ -1,1 +1,76 @@
+---
+title: "Dashboard"
+author: "DecoderMaverick"
+format:
+  dashboard:
+    orientation: rows
+    theme: default
+server: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r include=FALSE, echo = FALSE}
+#| label: libraries
+#| context: setup
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(cobalt)
+library(compareGroups)
+```
+
+```{r include=FALSE, echo = FALSE}
+#| label: data loading
+#| context: setup
+data_raw <- read.csv('plotting_data.csv')
+data <- data_raw %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  surgery_within_36h = factor(surgery_within_36h)
+)
+```
+
+
+
+# Home {#home scrolling="true"}
+
+## Introduction
+
+<h1>[Welcome to the Australian Hip Fracture Registry]{style="color:#423A8E"}</h1>
+
+This dashboard is a tool to benchmark hospital performance against the ACSQHC clinical quality indicators. <br>
+
+## Hospital Snapshot
+
+## Row {height="300px"}
+
 

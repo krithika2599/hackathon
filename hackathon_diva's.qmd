@@ -1,0 +1,347 @@
+---
+title: "hackathon_divas"
+format: html
+editor: visual
+---
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(cobalt)
+library(compareGroups)
+library(janitor)
+```
+
+```{r}
+data_raw <- read.csv('unsw_datathon_2025(in).csv')
+head(data_raw)
+```
+
+```{r}
+dim(data_raw) # 76 cols, 97429 rows
+
+summary(data_raw)
+```
+
+```{r}
+data1 <- data_raw %>% 
+  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2, mort30d, mort90d, mort120d, mort365d)
+
+dim(data1) # 26 cols, 97429 rows
+```
+
+```{r}
+summary(data1)
+```
+
+```{r}
+data1 <- data1 %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  cogstat = factor(cogstat, levels = c(1,2), label = c('Normal cognition', 'Impaired cognition')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT')),
+  mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased'))
+)
+```
+
+```{r}
+head(data1)
+```
+
+```{r}
+colnames(data1)
+```
+
+```{r}
+data1 <- data1 |>
+  mutate(
+    age_cat = cut(
+      age,
+      breaks = c(50, 60, 70, 80, 90, 100, 110),
+      labels = c("50–59", "60–69", "70–79", "80–89", "90–99", "100–109"),
+      right = TRUE,   # interval: (a,b]
+      include.lowest = TRUE
+    )
+  )
+```
+
+```{r}
+nrow(data1)
+
+table(data1$sex, useNA = "ifany")
+
+table(data1$age_cat, useNA = "ifany")
+```
+
+Indicators
+
+Section 1 - Buat Variabel dan KPI Cardsnya
+
+1.  Care at Presentation
+
+```{r}
+qs1_total <- nrow(data1)
+qs1_cog_screen <- mean(data1$cogassess == "Yes", na.rm = TRUE)   
+qs1_cogstat <- mean(data1$cogstat == "Yes", na.rm = TRUE) 
+```
+
+<h2>[QS1 – Care at presentation: Snapshot]{style="color:#423A8E"}</h2>
+
+::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Cognitive screening completed <br>
+`r scales::percent(qs1_cog_screen, accuracy = 0.1)`
+`r scales::percent(qs1_cogstat, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs1_total`
+```
+:::
+:::::
+
+2.  Pain Management
+
+```{r}
+qs2_total <- nrow(data1)
+qs2a_analg_30 <- mean(data1$painmanage == "Yes", na.rm = TRUE)   # Indicator 2a
+qs2b_nerve_block <- mean(data1$analges == "Yes", na.rm = TRUE)    # Indicator 2b 
+qs2c1_transfer <- mean(data1$tarrdatetime_year == "Yes", na.rm = TRUE) 
+qs2c2_transfer <- mean(data1$tarrdatetime_month == "Yes", na.rm = TRUE) 
+qs2c3_transfer <- mean(data1$tarrdatetime_datediff == "Yes", na.rm = TRUE) 
+
+
+```
+
+<h2>[QS2 – Pain management: Snapshot]{style="color:#423A8E"}</h2>
+
+::::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Analgesia ≤ 30 minutes or not required <br>
+`r scales::percent(qs2a_analg_30, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#0D6EFD;"}
+```         
+Nerve block before surgery <br>
+`r scales::percent(qs2b_nerve_block, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Nerve block before surgery prior to transferring <br>
+`r scales::percent(qs2c1_transfer, accuracy = 0.1)`
+`r scales::percent(qs2c2_transfer, accuracy = 0.1)`
+`r scales::percent(qs2c3_transfer, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs2_total`
+```
+:::
+:::::::
+
+3.  Orthogeriatric Model of Care
+
+```{r}
+qs3_total <- nrow(data1)
+qs3_frailty <- mean(data1$frailty == "Yes", na.rm = TRUE)    
+qs3_delirium <- mean(data1$delassess == "Yes", na.rm = TRUE)  
+qs3_nutrition <- mean(data1$ons == "Yes", na.rm = TRUE)  
+```
+
+<h2>[QS3 – Orthogeriatric model of care: Snapshot]{style="color:#423A8E"}</h2>
+
+::: {.kpi-card style="background-color:#0D6EFD;"}
+```         
+Nerve block before surgery <br>
+`r scales::percent(qs3_frailty, accuracy = 0.1)`
+```
+:::
+
+:::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Delirium assessed after surgery <br>
+`r scales::percent(qs3_delirium, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#0D6EFD;"}
+```         
+Nutrition supplements given <br>
+`r scales::percent(qs3_nutrition, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs3_total`
+```
+:::
+::::::
+
+4.  Timing of Surgery
+
+```{r}
+#qs4_total <- nrow(data1)
+#qs4_surg36 <- mean(data1$arrdatetime_datediff, na.rm = TRUE)          
+#qs4_med_time_1 <- median(data1$sdatetime_datediff, na.rm = TRUE)   
+#qs4_med_time_2 <- median(data1$delay, na.rm = TRUE) 
+#qs4_med_time_3 <- median(data1$sdatetime_hms, na.rm = TRUE) 
+```
+
+```{r}
+data1 |>
+  count(delay) |>
+  mutate(prop = n / sum(n)) |>
+  ggplot(aes(x = delay, y = prop)) +
+  geom_col(fill = "#423A8E") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "Delay category",
+    y = "Proportion of patients",
+    title = "Distribution of delay to surgery"
+  ) +
+  theme_minimal()
+```
+
+5.  Mobilisation and Weight Bearing
+
+```{r}
+
+qs5_total <- nrow(data1)
+qs5_mobilised_1 <- mean(data1$mobil == TRUE, na.rm = TRUE)  
+qs5_mobilised_2 <- mean(data1$mobil2 == "Yes", na.rm = TRUE)  
+qs5_pressure <- mean(data1$pulcers == "Yes", na.rm = TRUE) 
+```
+
+HTML card:
+
+\`\`\`markdown
+
+<h2>[QS5 – Mobilisation and weight bearing: Snapshot]{style="color:#423A8E"}</h2>
+
+:::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Mobilised day 0 or 1 <br>
+`r scales::percent(qs5_mobilised_1, accuracy = 0.1)`
+`r scales::percent(qs5_mobilised_2, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#DC3545;"}
+```         
+New pressure injury (Stage ≥ 2) <br>
+`r scales::percent(qs5_pressure, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs5_total`
+```
+:::
+::::::
+
+6.  Minimising Risk of Another Fracture
+
+```{r}
+
+qs6_total <- nrow(data1)
+qs6_bone_meds <- mean(data1$dbonemed1 == "Yes", na.rm = TRUE) 
+
+
+```
+
+HTML card:
+
+\`\`\`markdown
+
+<h2>[QS6 – Minimising risk of another fracture: Snapshot]{style="color:#423A8E"}</h2>
+
+::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Bone protection medicine given or prescribed <br>
+`r scales::percent(qs6_bone_meds, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs6_total`
+```
+:::
+:::::
+
+7.  Transition from Hospital Care
+
+```{r}
+qs7_total <- nrow(data1)
+qs7_careplan <- mean(data1$wdest == "Yes", na.rm = TRUE)
+```
+
+HTML card:
+
+\`\`\`markdown
+
+<h2>[QS7 – Transition from hospital care: Snapshot]{style="color:#423A8E"}</h2>
+
+::::: kpi-cards
+::: {.kpi-card style="background-color:#198754;"}
+```         
+Individualised care plan prepared <br>
+`r scales::percent(qs7_careplan, accuracy = 0.1)`
+```
+:::
+
+::: {.kpi-card style="background-color:#6C757D;"}
+```         
+Total hip fracture patients <br>
+`r qs7_total`
+```
+:::
+:::::

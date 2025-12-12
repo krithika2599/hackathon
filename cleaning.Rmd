@@ -33,7 +33,7 @@ summary(data_raw)
 
 ```{r filtering the necessary columns}
 hip_data <- data_raw %>% 
-  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2, tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms)
+  select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2, tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms, mort30d, mort90d, mort120d, mort365d)
 
 dim(hip_data) # 26 cols, 97429 rows
 ```

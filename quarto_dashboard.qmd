@@ -752,7 +752,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-1" class="page-button__link">
       <div class="page-button__header">Quality Standard 1: Care at presentation</div>
       <div class="page-button__body">Indicator 1a: Cognitive screening at presentation</div>
-      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p1a_ach`</p></div> 
+      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p1a_ach` % </p></div> 
       <img src="images/qs1.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -761,11 +761,11 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-2" class="page-button__link">
       <div class="page-button__header">Quality Standard 2: Pain management</div>
       <div class="page-button__body">Indicator 2a: Received analgesia ≤30 minutes within presentation</div>
-      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p2a_ach`</p></div>
+      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p2a_ach` % </p></div>
       <div class="page-button__body">Indicator 2b: Nerve block prior to surgery Indicator</div>
-      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p2b_ach`</p></div>
+      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p2b_ach` % </p></div>
       <div class="page-button__body">Indicator 2c: Nerve block prior to transfer (transfer patients)</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p2c_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p2c_ach` % </p></div>
       <img src="images/qs2.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -774,11 +774,11 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-3" class="page-button__link">
       <div class="page-button__header">Quality Standard 3: Orthogeriatric model of care</div>
       <div class="page-button__body">Indicator 3a: Clinical frailty assessment using validated tool</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p3a_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p3a_ach` % </p></div>
       <div class="page-button__body">Indicator 3b: Delirium assessment after surgery</div>
-      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p3b_ach`</p></div>
+      <div class="page-button__body"><p style="color: red; font-size: 30px;"> `r p3b_ach` % </p></div>
       <div class="page-button__body">Indicator 3c: Received Protein and energy oral nutritional supplements</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p3c_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p3c_ach` % </p></div>
       <img src="images/qs3.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -787,7 +787,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-4" class="page-button__link">
       <div class="page-button__header">Quality Standard 4: Timing of surgery</div>
       <div class="page-button__body">Indicator 4a: Surgery without delay (within 36 hours)</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p4a_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p4a_ach` % </p></div>
       <img src="images/qs4.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -799,9 +799,9 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-5" class="page-button__link">
       <div class="page-button__header">Quality Standard 5: Mobilisation and weight bearing</div>
       <div class="page-button__body">Indicator 5a: Mobilised on the day of, or the day after, surgery</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p5a_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p5a_ach` % </p></div>
       <div class="page-button__body">Indicator 5b: Did not develop new Stage-II-or-higher pressure injury</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p5b_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p5b_ach` % </p></div>
       <img src="images/qs5.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -810,7 +810,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-6" class="page-button__link">
       <div class="page-button__header">Quality Standard 6: Minimise risk of another fracture</div>
       <div class="page-button__body">Indicator 6a: Bone protection medicine in hospital / on discharge</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p6a_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p6a_ach` % </p></div>
       <img src="images/qs6.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -819,7 +819,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
     <a href="#qs-7" class="page-button__link">
       <div class="page-button__header">Quality Standard 7: Transition from hospital care</div>
       <div class="page-button__body">Indicator 7a: Development of further care plan after hospital admission</div>
-      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p7a_ach`</p></div>
+      <div class="page-button__body"> <p style="color: red; font-size: 30px;">`r p7a_ach` % </p></div>
       <img src="images/qs7.png" style="display:block;float:left;width:50px;height:50px;">
     </a>
   </div>
@@ -862,7 +862,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
   padding: 0.45rem 0.75rem;
   text-align: center;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* Bottom band (black) */
@@ -871,7 +871,7 @@ p7a_ach <- round(p7a$prop[p7a$status == "Achieved"]*100, digits = 2)  # this is 
   padding: 0.6rem 0.75rem;
   text-align: center;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 /* Hover/focus */

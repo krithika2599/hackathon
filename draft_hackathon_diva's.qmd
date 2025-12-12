@@ -118,6 +118,117 @@ table(data1$sex, useNA = "ifany")
 table(data1$age_cat, useNA = "ifany")
 ```
 
+```{r}
+# Missingness Check
+indicator_vars <- hip_data %>%
+  summarise(
+    cogassess_missing = mean(is.na(cogassess)),
+    painmanage_missing = mean(is.na(painmanage)),
+    analges_missing = mean(is.na(analges)),
+    tfanalges_missing = mean(is.na(tfanalges)),
+    frailty_missing = mean(is.na(frailty)),
+    delassess_missing = mean(is.na(delassess)),
+    ons_missing = mean(is.na(ons)),
+    delay_missing = mean(is.na(delay)),
+    mobil_missing = mean(is.na(mobil)),
+    pulcers_missing = mean(is.na(pulcers)),
+    bone_med_missing = mean(is.na(dbonemed1) & is.na(fbonemed2))
+  ) %>%
+  pivot_longer(everything(),
+               names_to = "variable",
+               values_to = "pct_missing") %>%
+  mutate(pct_missing = round(pct_missing * 100, 1))
+
+knitr::kable(
+  indicator_vars,
+  caption = "Missingness for indicator-related variables",
+  align = "lrr"
+)
+```
+
+
+```{r missing_all_count_percent}
+missing_tbl <- hip_data %>%
+  summarise(across(
+    everything(),
+    ~ sum(is.na(.)),
+    .names = "n_missing_{col}"
+  )) %>%
+  pivot_longer(everything(),
+               names_to = "variable",
+               values_to = "n_missing") %>%
+  mutate(
+    variable = str_remove(variable, "^n_missing_"),
+    percent_missing = round((n_missing / nrow(hip_data)) * 100, 1)
+  )
+
+knitr::kable(
+  missing_tbl,
+  caption = "Missing data summary (count and percent) for all variables"
+)
+
+```
+
+
+```{r}
+missing_long <- hip_data %>%
+  summarise(across(
+    everything(),
+    list(
+      n_missing = ~ sum(is.na(.)),
+      pct_missing = ~ mean(is.na(.))
+    ),
+    .names = "{col}_{fn}"
+  )) %>%
+  pivot_longer(everything(),
+               names_pattern = "(.*)_(n_missing|pct_missing)",
+               names_to = c("variable", "type"),
+               values_to = "value") %>%
+  pivot_wider(names_from = "type", values_from = "value") %>%
+  mutate(
+    pct_missing = round(pct_missing * 100, 1)
+  )
+
+knitr::kable(missing_long, caption = "Missing data table (long format)")
+
+```
+
+
+```{r}
+indicator_missing <- tibble(
+  variable = c(
+    "cogassess (1a)", "painmanage (2a)", "analges (2b)", "tfanalges (2c)",
+    "frailty (3a)", "delassess (3b)", "ons (3c)",
+    "delay (4a)", "mobil (5a)", "pulcers (5b)",
+    "dbonemed1/fbonemed2 (6a)"
+  ),
+  n_missing = c(
+    sum(is.na(hip_data$cogassess)),
+    sum(is.na(hip_data$painmanage)),
+    sum(is.na(hip_data$analges)),
+    sum(is.na(hip_data$tfanalges)),
+    sum(is.na(hip_data$frailty)),
+    sum(is.na(hip_data$delassess)),
+    sum(is.na(hip_data$ons)),
+    sum(is.na(hip_data$delay)),
+    sum(is.na(hip_data$mobil)),
+    sum(is.na(hip_data$pulcers)),
+    sum(is.na(hip_data$dbonemed1) & is.na(hip_data$fbonemed2))
+  )
+) %>%
+  mutate(
+    pct_missing = round((n_missing / nrow(hip_data)) * 100, 1)
+  )
+
+knitr::kable(
+  indicator_missing,
+  caption = "Missingness for ACSQHC indicator variables (count + percent)"
+)
+
+```
+
+
+
 <!-- ###3) Overall summary (for clinicians)-->
 
 ```{r}
@@ -209,7 +320,7 @@ hip_data <- hip_data %>%
 
 ```{r}
 indicator_overall <- tibble(
-indicator = c("1a","2a","2b","2c","3a","3b","3c","4a","5a","5b","6a"),
+indicator = c("1a","2a","2b","2c","3a","3b","3c","4a","5a","5b","6a","7a"),
 description = c(
 "Cognitive screening at presentation",
 "Analgesia ≤30 minutes or not required",
@@ -221,11 +332,12 @@ description = c(
 "Surgery without delay (<48h, proxy via delay)",
 "Mobilised day of/day after surgery",
 "New Stage-II-or-higher pressure injury",
-"Bone protection medicine in hospital/on discharge"
+"Bone protection medicine in hospital/on discharge",
+"Transition from hospital care"
 ),
 var = c("ind_1a","ind_2a","ind_2b","ind_2c",
 "ind_3a","ind_3b","ind_3c","ind_4a",
-"ind_5a","ind_5b","ind_6a")
+"ind_5a","ind_5b","ind_6a", "ind_7a")
 ) %>%
 rowwise() %>%
 mutate(
@@ -560,6 +672,13 @@ plot_line_hosp(
   direction = "bottom"
 )
 
+# Indicator 7a - Transition from hospital care
+plot_line_hosp(
+  prop_by_hosp(hip_data, "ind_7a"),
+  "Indicator 6a — Bone protection medicine (20 lowest hospitals)",
+  direction = "bottom"
+)
+
 ```
 
 
@@ -629,6 +748,12 @@ plot_donut(
 plot_donut(
   prop_for_donut(hip_data, "ind_6a"),
   "Indicator 6a — Bone protection medicine given"
+)
+
+# Donut 7a
+plot_donut(
+  prop_for_donut(hip_data, "ind_7a"),
+  "Indicator 7a (proxy) — Individualised care plan based on discharge destination"
 )
 
 ```
@@ -726,6 +851,13 @@ plot_bar_with_avg(
   n_show = NA
 )
 
+# Bar + average line 7a (all hospitals)
+plot_bar_with_avg(
+  hip_data,
+  "ind_7a",
+  "Indicator 7a (proxy) — Care plan based on discharge destination (all hospitals)",
+  n_show = NA
+)
 ```
 
 
@@ -831,6 +963,14 @@ plot_bar_with_avg(
   direction = "lowest"
 )
 
+# 7a — 20 lowest
+plot_bar_with_avg(
+  hip_data,
+  "ind_7a",
+  "Indicator 7a — Individualised care plan (proxy) (20 lowest hospitals)",
+  n_show = 20,
+  direction = "lowest"
+)
 ```
 
 xxxxxx

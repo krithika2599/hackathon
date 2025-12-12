@@ -29,10 +29,14 @@ View(data_raw)
 dim(data_raw) # 76 cols, 97429 rows
 
 summary(data_raw)
+
+# filtering for records recorded in 2023
+data_f <- data_raw %>% filter(sdatetime_year == 2023)
+dim(data_f)
 ```
 
 ```{r filtering the necessary columns}
-hip_data <- data_raw %>% 
+hip_data <- data_f %>% 
   select(ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk, cogassess, bonemed, side, afracture, ftype, asa, frailty, delay, analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest, fbonemed2, tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms, mort30d, mort90d, mort120d, mort365d)
 
 dim(hip_data) # 26 cols, 97429 rows
@@ -201,11 +205,11 @@ data1 <- data1 %>% mutate(mobil = if_else(is.na(mobil) & wbear == 1, 1, mobil))
 #   surgery_within_36h = factor(surgery_within_36h)
 # )
 
-data <- data1 %>% filter(rowSums(is.na(across(everything()))) / ncol(.) <= 0.1)
-dim(data)
+# data <- data1 %>% filter(rowSums(is.na(across(everything()))) / ncol(.) <= 0.1)
+# dim(data)
 ```
 ```{r}
-readr::write_csv(data, "plotting_data.csv")
+readr::write_csv(data1, "plotting_data.csv")
 ```
 
 

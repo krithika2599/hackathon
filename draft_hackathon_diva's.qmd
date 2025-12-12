@@ -110,6 +110,7 @@ data1 <- hip_data |>
   )
 ```
 
+
 ```{r, results="hide"}
 nrow(hip_data)
 
@@ -117,6 +118,7 @@ table(data1$sex, useNA = "ifany")
 
 table(data1$age_cat, useNA = "ifany")
 ```
+
 
 ```{r}
 # Missingness Check
@@ -308,11 +310,24 @@ hip_data <- hip_data %>%
       "Calcium and/or vitamin D only",
       "Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT"
     )),
-
-    # Indicator 7a: not available in this dataset (no care plan variable)
-    ind_7a = NA
-  )
-
+    
+    # Indicator 7a (proxy): individualised care plan using discharge destination
+    ind_7a = case_when(
+      wdest %in% c(
+        "Private residence",
+        "Residential aged care facility",
+        "Rehabilitation unit public",
+        "Rehabilitation unit private",
+        "Short term care in residential care facility (New Zealand only)"
+      ) ~ TRUE,
+      wdest %in% c(
+        "Other hospital / ward / specialty",
+        "Deceased",
+        "Other"
+      ) ~ FALSE,
+      TRUE ~ NA
+    )
+)
 ```
 
 

@@ -42,63 +42,32 @@ dim(hip_data) # 26 cols, 97429 rows
 summary(hip_data)
 ```
 
-```{r factorising as needed}
-hip_data_factor <- hip_data %>% mutate(
-  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
-  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
-  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
-  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
-  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
-  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
-  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
-  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
-  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
-  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
-  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
-  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
-  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
-  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
-  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
-  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
-  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
-  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
-  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
-  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
-  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
-  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
-  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
-  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT'))
-)
-```
-
-
 ## Time from admissions
 
 ```{r}
 # Transfer time
-hip_data_factor$tarrdatetime_hms
+hip_data$tarrdatetime_hms
 ```
 
 ```{r}
 # Operation time 
-hip_data_factor$arrdatetime_hms
+hip_data$arrdatetime_hms
 ```
 
 ```{r}
 # Inpatient time 
-hip_data_factor$admdatetimeop_hms
+hip_data$admdatetimeop_hms
 ```
 
 # Time of surgery
 
 ```{r}
 # hip fracture surgery time 
-hip_data_factor$sdatetime_hms
+# hip_data$sdatetime_hms
 ```
+
 ```{r}
-
-
-hip_data_factor <- hip_data_factor %>%
+hip_data <- hip_data %>%
   mutate(
     #admission_time = case_when(
       #!is.na(admdatetimeop_hms) ~ admdatetimeop_hms,
@@ -108,7 +77,7 @@ hip_data_factor <- hip_data_factor %>%
 )
 
 
-hip_data_factor <- hip_data_factor %>%
+hip_data <- hip_data %>%
   mutate(
     admission_time    = as_hms(admission_time),
     surgery_time = as_hms(sdatetime_hms),
@@ -124,49 +93,132 @@ hip_data_factor <- hip_data_factor %>%
 
 ```{r}
 # checkoing the diff values 
-hip_data_factor$diff_hours
+hip_data$diff_hours
 ```
 
 ```{r}
 # Check number of na values
-zeros <- hip_data_factor %>% filter(diff_hours == 0)
-nrow(zeros)
+zeros <- hip_data %>% filter(diff_hours == 0)
+# nrow(zeros)
 #hours are zero but there is difference in seconds
 
 # number of rows in dataset 
-nrow(hip_data_factor)
+# nrow(hip_data)
 ```
 
 ```{r}
-surgery_time_greater <- hip_data_factor %>% filter(diff_hours < 0)
-nrow(surgery_time_greater)
+surgery_time_greater <- hip_data %>% filter(diff_hours < 0)
+# nrow(surgery_time_greater)
 # All surgery times are after admission time
 ```
 
 
 ```{r}
 # Check number of na values
-sum(is.na(hip_data_factor$diff_hours))
+sum(is.na(hip_data$diff_hours))
 ```
 
 ```{r}
 # Adding surgery indicator
-hip_data_factor <- hip_data_factor %>%
+hip_data <- hip_data %>%
   mutate(
     time_surgery_indicator = ifelse(diff_hours <= 36, "Yes", "No")
   )
-hip_data_factor$time_surgery_indicator
+hip_data$time_surgery_indicator
 ```
 
 ```{r}
 # Viewing if all the columns are added 
-View(hip_data_factor)
+# View(hip_data)
+# changing the name of the hip_data 
+data1 <- hip_data
 ```
 
 
 ```{r}
+summary(data1)
+```
+
+```{r}
+# renaming the timer_surgery_indicator column
+data1 <- data1 %>% rename(surgery_within_36h = time_surgery_indicator) %>%
+  mutate(surgery_within_36h = factor(surgery_within_36h))
+
+# removing the non-needed time columns
+data1 <- data1 %>% select(-tarrdatetime_hms, -arrdatetime_hms, -admdatetimeop_hms, -sdatetime_hms, -admdatetimeop_hms, -admission_time, -surgery_time, -diff_sec)
+```
+
+```{r}
+summary(data1)
+```
+
+```{r}
+# removing the 2 columns that probably arent needed
+data1 <- data1 %>% select(-mobil2, -fbonemed2)
+
+# replacing nas in painassess with 3
+data1 <- data1 %>% mutate(painassess = replace_na(painassess, 3))
+
+# replacing nas in painmanage with 4, only if painassess == 3
+data1 <- data1 %>%  mutate(painmanage = if_else(is.na(painmanage) & painassess == 3, 4,painmanage))
+
+# imputing the tfanalges column
+data1 <- data1 %>% mutate(tfanalges = if_else(is.na(tfanalges) & (e_dadmit == 1 | e_dadmit == 3), 1, tfanalges))
+
+# imputing delay
+data1 <- data1 %>% mutate(delay = if_else(is.na(delay) & diff_hours < 48, 1, delay))
+
+# imputing mobil
+data1 <- data1 %>% mutate(mobil = if_else(is.na(mobil) & wbear == 1, 1, mobil))
 
 ```
+
+
+```{r factorising as needed}
+data1 <- data1 %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')),
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')),
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')),
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')),
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  surgery_within_36h = factor(surgery_within_36h)
+)
+
+data <- data1 %>% filter(rowSums(is.na(across(everything()))) / ncol(.) <= 0.1)
+dim(data)
+```
+```{r}
+readr::write_csv(data, "plotting_data.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

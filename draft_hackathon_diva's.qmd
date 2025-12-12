@@ -27,33 +27,39 @@ library(plotly)
 
 
 ```{r, results="hide"}
-data_raw <- read.csv('unsw_datathon_2025(in).csv')
-head(data_raw)
+# data_raw <- read.csv('unsw_datathon_2025(in).csv')
+# head(data_raw)
 ```
 
 
 ```{r, results="hide"}
-dim(data_raw) # 76 cols, 97429 rows
-
-summary(data_raw)
+# dim(data_raw) # 76 cols, 97429 rows
+# 
+# summary(data_raw)
 ```
 
 <!-- Pilih variabel--> 
 
 ```{r, results="hide"}
-hip_data <- data_raw %>%
-select(
-ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk,
-cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay,
-analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest,
-fbonemed2, mort30d, mort90d, mort120d, mort365d,
-tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms
-)
-
-dim(hip_data)
+# hip_data <- data_raw %>%
+# select(
+# ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk,
+# cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay,
+# analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest,
+# fbonemed2, mort30d, mort90d, mort120d, mort365d,
+# tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms
+# )
+# 
+# dim(hip_data)
 ```
 
 ```{r, results="hide"}
+# summary(hip_data)
+
+hip_data <- read.csv("plotting_data.csv")
+
+dim(hip_data)
+
 summary(hip_data)
 ```
 
@@ -68,7 +74,6 @@ hip_data <- hip_data %>% mutate(
   tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
   walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
   cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
-  cogstat = factor(cogstat, levels = c(1,2), label = c('Normal cognition', 'Impaired cognition')),
   bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
   side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
   afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
@@ -83,13 +88,12 @@ hip_data <- hip_data %>% mutate(
   dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
   delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
   ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
-  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
   wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
-  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT')),
   mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
   mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
   mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
-  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased'))
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  surgery_within_36h = factor(surgery_within_36h)
 )
 ```
 
@@ -193,9 +197,6 @@ hip_data <- hip_data %>%
       "Yes - Calcium and/or vitamin D only",
       "Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT",
       "No but received prescription at separation from hospital"
-    )) | (fbonemed2 %in% c(
-      "Calcium and/or vitamin D only",
-      "Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT"
     )),
 
     # Indicator 7a: not available in this dataset (no care plan variable)
@@ -456,8 +457,6 @@ summarise(
 `delay (4a)`     = mean(is.na(delay)),
 `mobil (5a)`     = mean(is.na(mobil)),
 `pulcers (5b)`   = mean(is.na(pulcers)),
-`dbonemed1/fbonemed2 (6a)` =
-mean(is.na(dbonemed1) & is.na(fbonemed2))
 ) %>%
 pivot_longer(everything(),
 names_to = "Variable",

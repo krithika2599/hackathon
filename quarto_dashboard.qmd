@@ -1,10 +1,14 @@
 ---
-title: "Dashboard"
-author: "DecoderMaverick"
+title: "ANZ Dashboard"
 format:
   dashboard:
+    theme: flatly
     orientation: rows
-    theme: default
+    logo: images/logo.png
+    navbar:   # ← must exist for logo to appear
+      top: 
+        - text: "Home"
+          href: "#"
 server: shiny
 ---
 
@@ -22,6 +26,10 @@ library(stringr)
 library(lubridate)
 library(cobalt)
 library(compareGroups)
+library(janitor)
+library(scales)
+library(hms)
+library(plotly)
 ```
 
 ```{r include=FALSE, echo = FALSE}
@@ -30,15 +38,129 @@ library(compareGroups)
 data_raw <- read.csv('unsw_datathon_2025.csv')
 ```
 
+```{r include=FALSE, echo = FALSE}
+#| label: subset
+#| context: setup
+
+hip_data <- data_raw %>%
+select(
+ahos_code, age, sex, e_dadmit, painassess, painmanage, tfanalges, walk,
+cogassess, cogstat, bonemed, side, afracture, ftype, asa, frailty, delay,
+analges, wbear, mobil, pulcers, dbonemed1, delassess, ons, mobil2, wdest,
+fbonemed2, mort30d, mort90d, mort120d, mort365d,
+tarrdatetime_hms, arrdatetime_hms, admdatetimeop_hms, sdatetime_hms
+)
+
+# Convert to factors
+
+hip_data <- hip_data %>% mutate(
+  sex = factor(sex, levels = c(1,2,3), labels = c('Male', 'Female', 'Intersex or Indetermine')),
+  e_dadmit = factor(e_dadmit, levels = c(1, 2, 3, 4), labels = c('Yes', 'No - transferred from another hospital(via ED)', 'No - in-patient fall', 'No - transferred from another hospital (direct to ward)')), 
+  painassess = factor(painassess, levels = c(1, 2, 3), labels = c('Within 30 minutes of ED presentation', 'Greater than 30 minutes of ED presentation', 'Pain assessment not documented or not done')),
+  painmanage = factor(painmanage, levels = c(1, 2, 3, 4), labels = c('Given within 30 minutes of ED presentation', 'Given more than 30 minutes after ED presentation', 'Not required – already provided by paramedics', 'Not required – no pain documented on assessment')),
+  tfanalges = factor(tfanalges, levels = c(1, 2), labels = c('No', 'Yes')),
+  walk = factor(walk, levels = c(1, 2, 3, 4), labels = c('Walks without walking aids', 'Walks with either a stick or crutch', 'Walks with two aids or frame', 'Uses a wheelchair / bed bound')),
+  cogassess = factor(cogassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and normal', 'Assessed and abnormal or impaired')),
+  cogstat = factor(cogstat, levels = c(1,2), label = c('Normal cognition', 'Impaired cognition')),
+  bonemed = factor(bonemed, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparitide, raloxifene or HRT')),
+  side = factor(side, levels = c(1, 2), labels = c('Left', 'Right')),
+  afracture = factor(afracture, levels = c(1, 2, 3), labels = c('Not a pathological or atypical fracture', 'Pathological fracture', 'Atypical fracture')),
+  ftype = factor(ftype, levels = c(1, 2, 3, 4), labels = c(' Intracapsular undisplaced/impacted displaced', 'Intracapsular displaced', 'Per/intertrochanteric', 'Subtrochanteric')),
+  asa = factor(asa, levels = c(1, 2, 3, 4, 5), labels = c('Healthy individual with no systemic disease', 'Mild systemic disease not limiting activity', 'Severe systemic disease that limits activity but is not incapacitating', ' Incapacitating systemic disease which is constantly life threatening', 'Moribund not expected to survive 24 hours with or without surgery')),
+  frailty = factor(frailty, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), labels = c('Very Fit', 'Well', 'Well, with treated comorbid disease', 'Vulnerable', 'Mildly Frail', 'Moderately Frail', 'Severely Frail', 'Very Severely Frail', 'Terminally Ill', 'Fraility assessment using other validated tool')),
+  delay = factor(delay, levels = c(1, 2, 3, 4, 5, 6, 7), labels = c('No delay, surgery completed <48 hours', 'Delay due to patient deemed medically unfit', 'Delay due to issues with anticoagulation', 'Delay due to theatre availability', 'Delay due to surgeon availability', 'Delay due to delayed diagnosis of hip fracture', 'Other type of delay (state reason)')), 
+  analges = factor(analges, levels = c(1, 2, 3, 4), labels = c('Nerve block administered before arriving in OT', 'Nerve block administered in OT', 'Both', 'Neither')),
+  wbear = factor(wbear, levels = c(1, 2),labels = c('Unrestricted Weight Bearing', 'Restricted/non weight bearing')),
+  mobil = factor(mobil, levels = c(1, 2), labels = c('Patient out of bed and given opportunity to start mobilising day 1 post surgery', 'Patient not given opportunity to start mobilising day 1 post surgery')),
+  pulcers = factor(pulcers, levels = c(1, 2), labels = c('No', 'Yes')),
+  dbonemed1 = factor(dbonemed1, levels = c(1, 2, 3, 4), labels = c('No bone protection medication', 'Yes - Calcium and/or vitamin D only', 'Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT', 'No but received prescription at separation from hospital')), 
+  delassess = factor(delassess, levels = c(1, 2, 3), labels = c('Not assessed', 'Assessed and not identified', 'Assessed and identified')), 
+  ons = factor(ons, levels = c(1, 2), labels = c('No', 'Yes')),
+  mobil2 = factor(mobil2, levels = c(1, 2), labels = c('No', 'Yes')),
+  wdest = factor(wdest, levels = c(1, 2, 3, 4, 5, 6, 7, 8), labels = c('Private residence', 'Residential aged care facility', 'Rehabilitation unit public', 'Rehabilitation unit private', 'Other hospital / ward / specialty', 'Deceased', 'Short term care in residential care facility (New Zealand only)', 'Other' )),
+  fbonemed2 = factor(fbonemed2, levels = c(1, 2, 3), labels = c('No bone protection medication', 'Calcium and/or vitamin D only', 'Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT')),
+  mort30d = factor(mort30d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort90d = factor(mort90d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort120d = factor(mort120d, levels = c(1,2), labels = c('Alive', 'Deceased')),
+  mort365d = factor(mort365d, levels = c(1,2), labels = c('Alive', 'Deceased'))
+)
+
+# Create variables for indicators
+
+hip_data <- hip_data %>%
+  mutate(
+    # Indicator 1a: Cognitive screening at presentation
+    ind_1a = cogassess %in% c("Assessed and normal",
+                              "Assessed and abnormal or impaired"),
+
+    # Indicator 2a: Analgesia ≤30 minutes or not required
+    ind_2a = painmanage %in% c(
+      "Given within 30 minutes of ED presentation",
+      "Not required – already provided by paramedics",
+      "Not required – no pain documented on assessment"
+    ),
+
+    # Indicator 2b: Nerve block prior to surgery
+    ind_2b = analges %in% c("Nerve block administered before arriving in OT",
+                            "Both"),
+
+    # Transfer flag (for Indicator 2c)
+    transfer_flag = e_dadmit %in% c(
+      "No - transferred from another hospital(via ED)",
+      "No - transferred from another hospital (direct to ward)"
+    ),
+
+    # Indicator 2c: Nerve block prior to transfer (transfer patients only)
+    ind_2c = (tfanalges == "Yes") & transfer_flag,
+
+    # Indicator 3a: Clinical frailty assessment
+    ind_3a = !is.na(frailty),
+
+    # Indicator 3b: Delirium assessment after surgery
+    ind_3b = delassess %in% c("Assessed and not identified",
+                              "Assessed and identified"),
+
+    # Indicator 3c: Protein and energy oral nutritional supplements
+    ind_3c = ons == "Yes",
+
+    # Indicator 4a (proxy): Surgery without delay (<48 hours) using `delay`
+    ind_4a = delay == "No delay, surgery completed <48 hours",
+
+    # Indicator 5a: Mobilised on the day of, or the day after, surgery
+    ind_5a = mobil ==
+      "Patient out of bed and given opportunity to start mobilising day 1 post surgery",
+
+    # Indicator 5b: New Stage-II-or-higher pressure injury
+    ind_5b = pulcers == "Yes",
+
+    # Indicator 6a: Bone protection medicine in hospital / on discharge
+    ind_6a = (dbonemed1 %in% c(
+      "Yes - Calcium and/or vitamin D only",
+      "Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT",
+      "No but received prescription at separation from hospital"
+    )) | (fbonemed2 %in% c(
+      "Calcium and/or vitamin D only",
+      "Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT"
+    )),
+
+    # Indicator 7a: not available in this dataset (no care plan variable)
+    ind_7a = NA
+  )
+
+```
+
+
 # Home {scrolling="true"}
 
-## Introduction
+## Introduction {height="250px"}
 
-<h1><span style="color:#423A8E">Welcome to the Australian Hip Fracture Registry</span></h1>
+<h1><span style="color:#423A8E">Welcome to the Australian and New Zealand Hip Fracture Registry (ANZHFR)</span></h1>
 
-This dashboard is a tool to benchmark hospital performance against the ACSQHC clinical quality indicators. <br>
+This dashboard is a tool to benchmark hospital performance against the Australian Commission on Safety and Quality in Health Care (ACSQHC) clinical quality indicators. <br>
 
-## Hospital Snapshot
+Each page represents one clinical care standard requirement and shows indicators that will support hospitals to monitor how well they are implementing the care recommended in these requirements and are intended to support local quality improvement activities.<br>
+
+## Hospital Snapshot {height="500px"}
 
 ### 
 
@@ -55,19 +177,19 @@ patients_2024 <- data_raw %>%
 
 
 <div class="kpi-cards">
-  <div class="kpi-card" style="background-color:#FFC107;">
+  <div class="kpi-card" style="background-color:#D65745;">
    Active Patients <br>`r nrow(alive_not_discharged)`
   </div>
 
-  <div class="kpi-card" style="background-color:#DC3545;">
+  <div class="kpi-card" style="background-color:#E7A03C;">
    Last Modified <br>`r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` <br>`r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
   </div>
 
-  <div class="kpi-card" style="background-color:#198754;">
+  <div class="kpi-card" style="background-color:#5296D5;">
    2024 Records <br>`r nrow(patients_2024)`
   </div>
 
-  <div class="kpi-card" style="background-color:#0D6EFD;">
+  <div class="kpi-card" style="background-color:#58B99D;">
    All Records <br>`r nrow(data_raw)`
   </div>
 </div>
@@ -108,37 +230,36 @@ patients_2024 <- data_raw %>%
 
 </style>
 
+<!-- Row 2 and 3: 3 tiles -->
 
-##
+```{r, echo = FALSE}
+overview_tbl <- hip_data %>%
+summarise(
+median_age= median(age, na.rm = TRUE),
+male= 100 - (mean(sex == "Female", na.rm = TRUE) * 100),
+female= mean(sex == "Female", na.rm = TRUE) * 100,
+mort_30= mean(mort30d == "Deceased", na.rm = TRUE) * 100,
+mort_90= mean(mort90d == "Deceased", na.rm = TRUE) * 100,
+mort_year = mean(mort365d == "Deceased", na.rm = TRUE) * 100
+) %>%
+mutate(dplyr::across(where(is.numeric), ~round(., 1)))
+```
 
-### Hip Fracture Clinical Care Standard
-
-
-<h2><span style="color:#423A8E">Hip Fracture Clinical Care Standard</span></h2>
-
-<h3><span>Click the button to get to the next page</span></h3>
-
-<!-- Row 1: 4 tiles -->
-<div class="page-button">
-  <div class="page-button__item">[Care at presentation](#qs-1)</div>
-  <div class="page-button__item">[Pain management](#qs-2)</div>
-  <div class="page-button__item">[Orthogeriatric model of care](#qs-3)</div>
-  <div class="page-button__item">[Timing of surgery](#qs-4)</div>
+<div class="dem-button" style="grid-template-columns: repeat(3, minmax(220px, 1fr));">
+  <div class="dem-button__item">Median age: `r overview_tbl$median_age` years old </div>
+  <div class="dem-button__item">Male: `r overview_tbl$male` %</div>
+  <div class="dem-button__item">Female: `r overview_tbl$female` %</div>
 </div>
 
-
-<!-- Row 2: 3 tiles -->
-<div class="page-button" style="grid-template-columns: repeat(3, minmax(220px, 1fr));">
-  <div class="page-button__item">[Mobilisation and weight bearing](#qs-5)</div>
-  <div class="page-button__item">[Minimising risk of another fracture](#qs-6)</div>
-  <div class="page-button__item">[Transition from hospital care](#qs-7)</div>
+<div class="dem-button" style="grid-template-columns: repeat(3, minmax(220px, 1fr));">
+  <div class="dem-button__item">30-day mortality: `r overview_tbl$mort_30` %</div>
+  <div class="dem-button__item">90-day mortality: `r overview_tbl$mort_90` %</div>
+  <div class="dem-button__item">1-year mortality: `r overview_tbl$mort_year` %</div>
 </div>
-
-
 
 <style>
 /* Container: 4 columns on desktop */
-.page-button {
+.dem-button {
   display: grid;
   grid-template-columns: repeat(4, minmax(200px, 1fr));
   gap: 0.75rem;
@@ -146,7 +267,7 @@ patients_2024 <- data_raw %>%
 }
 
 /* Tile style */
-.page-button__item {
+.dem-button__item {
   min-height: 80px;
   border-radius: 1rem;
   padding: 0.75rem 1rem;
@@ -154,7 +275,7 @@ patients_2024 <- data_raw %>%
   font-weight: 600;
   font-size: 0.98rem;
   color: #ffff;
-  background: #423A8E;
+  background: #2c3e50;
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 
   display: flex;
@@ -163,16 +284,16 @@ patients_2024 <- data_raw %>%
 }
 
 /* Make the whole tile clickable */
-.page-button__item a {
+.dem-button__item a {
   color: #fff;
   text-decoration: none;
   width: 100%;
 }
 
 /* Hover/focus states */
-.page-button__item:hover,
-.page-button__item:focus-within {
-  background: #423A8E;
+.dem-button__item:hover,
+.dem-button__item:focus-within {
+  background: #2c3e50;
 }
 
 /* Responsive: 2 columns on tablets, stack on phones */
@@ -187,8 +308,145 @@ patients_2024 <- data_raw %>%
 ```{r, results="hide", include=FALSE}
 dim(data_raw) # 76 cols, 97429 rows
 
-summary(data_raw)
+##  {height="1500px"}
+
+###
+
+<h2><span style="color:#423A8E">Hip Fracture Clinical Care Standard</span></h2>
+
+```{=html}
+<!-- Row 1: 4 tiles -->
+<div class="page-button">
+  <div class="page-button__item">
+    <a href="#qs-1" class="page-button__link">
+      <div class="page-button__header">Quality Standard 1: Care at presentation</div>
+      <div class="page-button__body">Indicator 1a: Cognitive screening at presentation</div>
+      <img src="images/image_path.png">
+    </a>
+  </div>
+
+  <div class="page-button__item">
+    <a href="#qs-2" class="page-button__link">
+      <div class="page-button__header">Quality Standard 2: Pain management</div>
+      <div class="page-button__body">Indicator 2a: Received analgesia ≤30 minutes within presentation</div>
+      <div class="page-button__body">Indicator 2b: Nerve block prior to surgery Indicator</div>
+      <div class="page-button__body">Indicator 2c: Nerve block prior to transfer (transfer patients)</div>
+      <img src="images/image_path.jpg" alt="Description of the image">
+    </a>
+  </div>
+
+  <div class="page-button__item">
+    <a href="#qs-3" class="page-button__link">
+      <div class="page-button__header">Quality Standard 3: Orthogeriatric model of care</div>
+      <div class="page-button__body">Indicator 3a: Clinical frailty assessment using validated tool</div>
+      <div class="page-button__body">Indicator 3b: Delirium assessment after surgery</div>
+      <div class="page-button__body">Indicator 3c: Received Protein and energy oral nutritional supplements</div>
+    </a>
+  </div>
+
+  <div class="page-button__item">
+    <a href="#qs-4" class="page-button__link">
+      <div class="page-button__header">Quality Standard 4: Timing of surgery</div>
+      <div class="page-button__body">Indicator 4a: Surgery without delay (within 36 hours)</div>
+    </a>
+  </div>
+</div>
+
+<!-- Row 2: 3 tiles -->
+<div class="page-button page-button--three">
+  <div class="page-button__item">
+    <a href="#qs-5" class="page-button__link">
+      <div class="page-button__header">Quality Standard 5: Mobilisation and weight bearing</div>
+      <div class="page-button__body">Indicator 5a: Mobilised on the day of, or the day after, surgery</div>
+      <div class="page-button__body">Indicator 5b: Did not develop new Stage-II-or-higher pressure injury</div>
+    </a>
+  </div>
+
+  <div class="page-button__item">
+    <a href="#qs-6" class="page-button__link">
+      <div class="page-button__header">Quality Standard 6: Minimise risk of another fracture</div>
+      <div class="page-button__body">Indicator 6a: Bone protection medicine in hospital / on discharge</div>
+    </a>
+  </div>
+
+  <div class="page-button__item">
+    <a href="#qs-7" class="page-button__link">
+      <div class="page-button__header">Quality Standard 7: Transition from hospital care</div>
+      <div class="page-button__body">Indicator 7a: Development of further care plan after hospital admission</div>
+    </a>
+  </div>
+</div>
 ```
+
+<style>
+/* Grid containers */
+.page-button {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+/* Second row: only 3 tiles */
+.page-button.page-button--three {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+/* Outer tile wrapper */
+.page-button__item {
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* Make the whole tile clickable */
+.page-button__link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: #2c3e50;
+  height: 100%;
+}
+
+/* Top band (purple) */
+.page-button__header {
+  background: #95a5a6;
+  padding: 0.45rem 0.75rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* Bottom band (black) */
+.page-button__body {
+  background: #FFF;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Hover/focus */
+.page-button__item:hover .page-button__header,
+.page-button__item:focus-within .page-button__header {
+  background: #58B99D3;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .page-button { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+  .page-button.page-button--three { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+@media (max-width: 576px) {
+  .page-button,
+  .page-button.page-button--three {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+
+# Quality Standard 1 {#qs-1}
 
 ```{r, results="hide", include=FALSE}
 hip_data <- data_raw %>%
@@ -612,7 +870,7 @@ plot_donut(
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 2 {#qs-2 scrolling="true"}
+# Quality Standard 2 {#qs-2 scrolling="true"}
 
 <h1><span style="color:#423A8E">Pain management</span></h1>
 
@@ -671,7 +929,7 @@ plot_donut(
 ##
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 3 {#qs-3 scrolling="true"}
+# Quality Standard 3 {#qs-3 scrolling="true"}
 
 <h1><span style="color:#423A8E">Orthogeriatric model of care</span></h1>
 
@@ -697,6 +955,83 @@ plot_donut(
 
 ##
 
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_frailty <- data_raw %>%
+  filter(frailty %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) %>% 
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+# Per-hospital frailty documentation
+result_frailty <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_all = sum(frailty %in% 1:10, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_all = round(100 * n_all / total_patients, 1))
+
+# National frailty documentation proportion
+national_prop_frailty <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_all  = sum(frailty %in% 1:10, na.rm = TRUE),
+    prop_all = round(100 * n_all / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator3a_plot <- renderPlot({
+  req(result_frailty, national_prop_frailty)
+
+  ggplot(result_frailty,
+         aes(x = reorder(ahos_code, pct_all), y = pct_all)) +
+    geom_col(fill = "steelblue") +
+    geom_hline(yintercept = national_prop_frailty$prop_all,
+               color = "red", linetype = "dashed", size = 1) +
+    geom_label(
+      data = national_prop_frailty,
+      aes(
+        x = max(as.numeric(factor(result_frailty$ahos_code))) * 0.9,
+        y = prop_all,
+        label = "National Proportion"
+      ),
+      inherit.aes = FALSE,
+      color = "red", size = 3
+    ) +
+    labs(
+      title = "Proportion of patients with a recorded frailty score",
+      x = "Operating Hospital",
+      y = "Patients with frailty recorded (%)"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x  = element_blank(),
+      axis.ticks.x = element_blank()
+    )
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator3a_plot")
+```
+
+
+##
+
 <h2><span style="color:#423A8E">Indicator 3b</span></h2>
 
 Proportion of admitted patients with a hip fracture who were assessed for delirium after surgery.
@@ -709,6 +1044,73 @@ plot_donut(
   prop_for_donut(hip_data, "ind_3b"),
   "Post-Operative Delirium Assessment (%)"
 )
+```
+
+##
+
+<h3><span style="color:#423A8E">National Data</span></h3>
+
+```{r, echo=FALSE}
+#| context: server
+
+patients_per_hosp_delassess <- data_raw %>%
+  filter(delassess %in% c(2, 3)) %>%   # keep only 2 or 3
+  group_by(ahos_code) %>%
+  summarise(n_patients = n(), .groups = "drop") %>%
+  arrange(desc(n_patients))
+
+totals <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(total_patients = n(), .groups = "drop")
+
+result_delassess <- data_raw %>%
+  group_by(ahos_code) %>%
+  summarise(
+    total_patients = n(),
+    n_23 = sum(delassess %in% c(2, 3), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(pct_2_or_3 = round(100 * n_23 / total_patients, 1))
+
+national_prop_delassess <- data_raw %>%
+  summarise(
+    n_total = n(),
+    n_23    = sum(cogassess %in% c(2, 3), na.rm = TRUE),
+    prop_23 = round(100 * n_23 / n_total, 1)
+  )
+```
+
+
+```{r, echo=FALSE}
+#| context: server
+output$indicator3b_plot <- renderPlot({
+  req(result_delassess, national_prop_delassess)
+
+  ggplot(result_delassess,
+       aes(x = reorder(ahos_code, pct_2_or_3), y = pct_2_or_3)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = national_prop_delassess$prop_23,
+             color = "red", linetype = "dashed", size = 1) +
+  geom_label(
+    data = national_prop_delassess,
+    aes(x = max(as.numeric(factor(result_delassess$ahos_code))) * 0.9,
+        y = prop_23,
+        label = "National Proportion"),
+    inherit.aes = FALSE,
+    color = "red", size = 3
+  ) +
+  labs(title = "Proportion of patients who were assessed for delirium after surgery",
+       x = "Operating Hospital", y = "Patients screened (%)") +
+  theme_minimal() +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+})
+```
+
+```{r, echo=FALSE}
+#| context: render
+#| panel: fill
+plotOutput("indicator3b_plot")
 ```
 
 ##
@@ -729,7 +1131,7 @@ plot_donut(
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 4 {#qs-4 scrolling="true"}
+# Quality Standard 4 {#qs-4 scrolling="true"}
 
 <h1><span style="color:#423A8E">Timing of surgery</span></h1>
 
@@ -756,7 +1158,7 @@ plot_donut(
 
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 5 {#qs-5 scrolling="true"}
+# Quality Standard 5 {#qs-5 scrolling="true"}
 
 <h1><span style="color:#423A8E">Mobilisation and weight bearing</span></h1>
 
@@ -764,11 +1166,17 @@ A person with a hip fracture is mobilised without restrictions on weight bearing
 
 Last Modified: `r format(Sys.time(), "%d %b %Y", tz="Australia/Sydney")` `r format(Sys.time(), "%H:%M:%S", tz="Australia/Sydney")`
 
+54,wbear,Postoperative Weight Bearing Status,dbl+lbl,3144,,[1] Unrestricted weight bearing	 [2] Restricted / non weight bearing
+
+
 ## 
 
 <h2><span style="color:#423A8E">Indicator 5a</span></h2>
 
 Proportion of admitted patients with a hip fracture who were mobilised the day of, or the day after, their hip fracture surgery.
+
+55,mobil,First Day Mobilisation,dbl+lbl,14396,,[1] Patient out of bed and given opportunity to start mobilising day 1 post surgery	 [2] Patient not given opportunity to start mobilising day 1 post surgery
+
 
 ##
 
@@ -799,9 +1207,11 @@ plot_donut(
 
 ##
 
+56,pulcers,New Skin Pressure Injuries,dbl+lbl,5145,,[1] No	 [2] Yes
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 6 {#qs-6 scrolling="true"}
+# Quality Standard 6 {#qs-6 scrolling="true"}
 
 <h1><span style="color:#423A8E">Minimising risk of another fracture</span></h1>
 
@@ -828,9 +1238,14 @@ plot_donut(
 
 ##
 
+bonemed
+
+58,dbonemed1,Bone Protection Medication At Hospital Discharge,dbl+lbl,4888,,"[1] No bone protection medication	 [2] Yes - Calcium and/or vitamin D only	 [3] Yes - Bisphosphonates, denosumab, romosozumab, teriparatide, raloxifene or HRT	 [4] No but received prescription at separation from hospital"
+
+
 [⬅ Go Back to Home](#home){.btn .btn-secondary .btn-lg style="margin-top:20px; width:100%;"}
 
-# QS 7 {#qs-7 scrolling="true"}
+# Quality Standard 7 {#qs-7 scrolling="true"}
 
 <h1><span style="color:#423A8E">Transition from hospital care</span></h1>
 
